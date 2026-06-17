@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EdgeLog — Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:     #09090e; --bg1: #0f0f18; --bg2: #141420; --bg3: #1c1c2a; --bg4: #242434;
+  --border: rgba(255,255,255,0.09); --border2: rgba(255,255,255,0.16);
+  --purple: #7c5cfc; --purple2: #a488ff;
+  --green:  #26a69a; --green2: #4db6ac;
+  --red:    #ef5350; --gold: #f0c040; --blue: #42a5f5;
+  --text: #f0f0f8; --text2: #b0b0c8; --text3: #8484a0;
+  --mono: 'IBM Plex Mono', monospace; --ui: 'DM Sans', sans-serif;
+}
+body { background: var(--bg); color: var(--text); font-family: var(--ui); font-size: 14px; min-height: 100vh; }
+
+/* AUTH GATE */
+#auth-gate { min-height:100vh; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:16px; }
+#auth-gate p { color:var(--text3); font-family:var(--mono); font-size:12px; }
+#admin-app { display:none; }
+
+/* HEADER */
+.admin-header {
+  background:var(--bg1); border-bottom:1px solid var(--border);
+  padding:0 28px; height:60px; display:flex; align-items:center;
+  justify-content:space-between; position:sticky; top:0; z-index:50;
+}
+.admin-brand { display:flex; align-items:center; gap:10px; font-family:var(--mono); font-size:13px; font-weight:500; }
+.admin-badge { background:rgba(240,192,64,0.15); color:var(--gold); border:1px solid rgba(240,192,64,0.3); border-radius:5px; padding:2px 8px; font-size:9px; letter-spacing:.15em; text-transform:uppercase; }
+.header-right { display:flex; align-items:center; gap:12px; }
+.admin-avatar { width:28px; height:28px; border-radius:50%; border:1px solid var(--border2); }
+.admin-name { font-size:12px; color:var(--text3); font-family:var(--mono); }
+.btn-header { padding:6px 14px; border-radius:7px; font-family:var(--mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase; cursor:pointer; border:1px solid var(--border); background:var(--bg3); color:var(--text2); transition:all .2s; text-decoration:none; display:inline-flex; align-items:center; gap:6px; }
+.btn-header:hover { background:var(--bg4); color:var(--text); }
+.btn-header.primary { background:var(--purple); border-color:var(--purple); color:#fff; }
+.btn-header.primary:hover { background:var(--purple2); }
+
+/* TABS */
+.tab-bar { background:var(--bg1); border-bottom:1px solid var(--border); padding:0 28px; display:flex; gap:0; }
+.tab-btn { padding:14px 20px; font-family:var(--mono); font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--text3); cursor:pointer; border:none; background:none; border-bottom:2px solid transparent; transition:all .2s; }
+.tab-btn:hover { color:var(--text2); }
+.tab-btn.active { color:var(--purple2); border-bottom-color:var(--purple); }
+
+/* MAIN */
+.main-content { padding:28px; max-width:1400px; margin:0 auto; }
+.tab-panel { display:none; }
+.tab-panel.active { display:block; }
+
+/* STATS GRID */
+.stats-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:14px; margin-bottom:28px; }
+.stat-card { background:var(--bg1); border:1px solid var(--border); border-radius:12px; padding:18px 20px; }
+.stat-label { font-family:var(--mono); font-size:9px; letter-spacing:.18em; text-transform:uppercase; color:var(--text3); margin-bottom:8px; }
+.stat-value { font-family:var(--mono); font-size:28px; font-weight:500; line-height:1; }
+.stat-value.purple { color:var(--purple2); }
+.stat-value.green  { color:var(--green2); }
+.stat-value.gold   { color:var(--gold); }
+.stat-value.red    { color:var(--red); }
+.stat-value.blue   { color:var(--blue); }
+.stat-sub { font-family:var(--mono); font-size:10px; color:var(--text3); margin-top:4px; }
+
+/* SECTION */
+.section-hdr { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+.section-title { font-family:var(--mono); font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--text2); }
+.toolbar { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.search-input { background:var(--bg2); border:1px solid var(--border); border-radius:8px; padding:7px 12px; color:var(--text); font-family:var(--mono); font-size:11px; width:200px; outline:none; transition:border-color .2s; }
+.search-input:focus { border-color:var(--purple); }
+.search-input::placeholder { color:var(--text3); }
+.filter-select { background:var(--bg2); border:1px solid var(--border); border-radius:8px; padding:7px 10px; color:var(--text2); font-family:var(--mono); font-size:11px; outline:none; cursor:pointer; }
+.btn-sm { background:var(--bg2); border:1px solid var(--border); border-radius:8px; padding:7px 12px; color:var(--text2); font-family:var(--mono); font-size:10px; cursor:pointer; transition:all .2s; display:flex; align-items:center; gap:5px; }
+.btn-sm:hover { background:var(--bg3); color:var(--text); }
+
+/* TABLE */
+.table-wrap { background:var(--bg1); border:1px solid var(--border); border-radius:14px; overflow:hidden; overflow-x:auto; }
+table { width:100%; border-collapse:collapse; min-width:700px; }
+thead { background:var(--bg2); border-bottom:1px solid var(--border); }
+thead th { font-family:var(--mono); font-size:9px; letter-spacing:.16em; text-transform:uppercase; color:var(--text3); padding:11px 14px; text-align:left; white-space:nowrap; cursor:pointer; user-select:none; }
+thead th:hover { color:var(--text2); }
+tbody tr { border-bottom:1px solid var(--border); transition:background .15s; }
+tbody tr:last-child { border-bottom:none; }
+tbody tr:hover { background:var(--bg2); }
+tbody td { padding:12px 14px; vertical-align:middle; }
+.user-cell { display:flex; align-items:center; gap:10px; }
+.uavatar { width:30px; height:30px; border-radius:50%; border:1px solid var(--border2); flex-shrink:0; object-fit:cover; background:var(--bg3); }
+.uavatar-fb { width:30px; height:30px; border-radius:50%; background:var(--purple); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:600; color:#fff; flex-shrink:0; font-family:var(--mono); }
+.u-name { font-size:13px; font-weight:500; }
+.u-email { font-family:var(--mono); font-size:10px; color:var(--text3); }
+.mono-sm { font-family:var(--mono); font-size:11px; color:var(--text2); }
+.date-sm { font-family:var(--mono); font-size:10px; color:var(--text3); }
+.badge { display:inline-flex; align-items:center; gap:4px; border-radius:5px; padding:3px 8px; font-family:var(--mono); font-size:9px; letter-spacing:.1em; text-transform:uppercase; }
+.badge-dot { width:5px; height:5px; border-radius:50%; background:currentColor; }
+.badge-active  { background:rgba(38,166,154,.15); color:var(--green2); border:1px solid rgba(38,166,154,.25); }
+.badge-blocked { background:rgba(239,83,80,.15);  color:var(--red);    border:1px solid rgba(239,83,80,.25); }
+.badge-admin   { background:rgba(240,192,64,.15); color:var(--gold);   border:1px solid rgba(240,192,64,.25); }
+.actions-cell { display:flex; gap:5px; }
+.btn-action { padding:4px 10px; border-radius:6px; font-family:var(--mono); font-size:9px; letter-spacing:.1em; text-transform:uppercase; cursor:pointer; border:1px solid var(--border); background:var(--bg3); color:var(--text2); transition:all .15s; }
+.btn-block  { color:var(--red);    border-color:rgba(239,83,80,.3); }
+.btn-block:hover   { background:rgba(239,83,80,.1); }
+.btn-unblock { color:var(--green2); border-color:rgba(38,166,154,.3); }
+.btn-unblock:hover { background:rgba(38,166,154,.1); }
+.btn-detail { color:var(--purple2); border-color:rgba(124,92,252,.3); }
+.btn-detail:hover  { background:rgba(124,92,252,.1); }
+
+/* LOGIN EVENTS TABLE */
+.event-row td { padding:10px 14px; }
+.device-tag { display:inline-block; background:var(--bg3); border:1px solid var(--border); border-radius:4px; padding:2px 7px; font-family:var(--mono); font-size:9px; color:var(--text3); }
+
+/* CHART AREA */
+.chart-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:24px; }
+.chart-card { background:var(--bg1); border:1px solid var(--border); border-radius:14px; padding:20px; }
+.chart-title { font-family:var(--mono); font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--text3); margin-bottom:16px; }
+.bar-chart { display:flex; align-items:flex-end; gap:6px; height:100px; }
+.bar-col { display:flex; flex-direction:column; align-items:center; gap:4px; flex:1; }
+.bar { background:var(--purple); border-radius:3px 3px 0 0; width:100%; min-height:2px; transition:height .4s; }
+.bar-label { font-family:var(--mono); font-size:8px; color:var(--text3); text-align:center; }
+.bar-val { font-family:var(--mono); font-size:9px; color:var(--text2); }
+.device-list { display:flex; flex-direction:column; gap:8px; }
+.device-row { display:flex; align-items:center; gap:10px; }
+.device-name { font-size:12px; color:var(--text2); flex:1; }
+.device-bar-wrap { flex:2; background:var(--bg3); border-radius:4px; height:6px; overflow:hidden; }
+.device-bar-fill { height:100%; border-radius:4px; background:var(--purple); }
+.device-pct { font-family:var(--mono); font-size:10px; color:var(--text3); width:36px; text-align:right; }
+
+/* USER DETAIL MODAL */
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.7); z-index:200; display:none; align-items:center; justify-content:center; }
+.modal-overlay.open { display:flex; }
+.modal { background:var(--bg1); border:1px solid var(--border2); border-radius:18px; width:90%; max-width:640px; max-height:80vh; overflow-y:auto; padding:28px; box-shadow:0 24px 60px rgba(0,0,0,.7); }
+.modal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:22px; }
+.modal-title { font-family:var(--mono); font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--text2); }
+.modal-close { background:none; border:none; color:var(--text3); font-size:20px; cursor:pointer; padding:4px 8px; border-radius:6px; transition:all .2s; }
+.modal-close:hover { background:var(--bg3); color:var(--text); }
+.modal-user { display:flex; align-items:center; gap:14px; margin-bottom:22px; padding-bottom:22px; border-bottom:1px solid var(--border); }
+.modal-avatar { width:52px; height:52px; border-radius:50%; border:2px solid var(--border2); object-fit:cover; }
+.modal-user-name { font-size:18px; font-weight:600; }
+.modal-user-email { font-family:var(--mono); font-size:11px; color:var(--text3); margin-top:2px; }
+.detail-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:22px; }
+.detail-item { background:var(--bg2); border-radius:10px; padding:14px; }
+.detail-lbl { font-family:var(--mono); font-size:9px; letter-spacing:.14em; text-transform:uppercase; color:var(--text3); margin-bottom:5px; }
+.detail-val { font-family:var(--mono); font-size:12px; color:var(--text); word-break:break-all; }
+.history-title { font-family:var(--mono); font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--text2); margin-bottom:12px; }
+.history-item { display:flex; gap:10px; padding:10px 0; border-bottom:1px solid var(--border); }
+.history-item:last-child { border-bottom:none; }
+.h-dot { width:7px; height:7px; border-radius:50%; background:var(--purple); margin-top:4px; flex-shrink:0; }
+.h-text { font-size:12px; color:var(--text2); }
+.h-meta { font-family:var(--mono); font-size:10px; color:var(--text3); margin-top:2px; }
+
+/* EMPTY / LOADING */
+.table-empty { text-align:center; padding:50px 20px; font-family:var(--mono); font-size:11px; color:var(--text3); }
+.loading-spinner { display:inline-block; width:20px; height:20px; border:2px solid var(--border2); border-top-color:var(--purple); border-radius:50%; animation:spin .7s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* TOAST */
+.toast { position:fixed; bottom:24px; right:24px; background:var(--bg3); border:1px solid var(--border2); border-radius:10px; padding:12px 20px; font-family:var(--mono); font-size:11px; color:var(--text); z-index:9999; transform:translateY(80px); opacity:0; transition:all .3s cubic-bezier(.34,1.56,.64,1); box-shadow:0 8px 32px rgba(0,0,0,.5); }
+.toast.show { transform:translateY(0); opacity:1; }
+.toast.success { border-color:rgba(38,166,154,.4); color:var(--green2); }
+.toast.error   { border-color:rgba(239,83,80,.4);  color:var(--red); }
+
+@media (max-width:900px) {
+  .stats-grid { grid-template-columns:repeat(2,1fr); }
+  .chart-row  { grid-template-columns:1fr; }
+  .main-content { padding:16px; }
+  .admin-header { padding:0 16px; }
+  .admin-name { display:none; }
+  .detail-grid { grid-template-columns:1fr; }
+}
+</style>
+</head>
+<body>
+
+<div id="auth-gate">
+  <div class="loading-spinner"></div>
+  <p>Verifying admin access…</p>
+</div>
+
+<div id="admin-app">
+  <!-- Header -->
+  <header class="admin-header">
+    <div class="admin-brand">
+      <span style="color:var(--purple2);font-size:16px;">▣</span>
+      EdgeLog <span class="admin-badge">Admin</span>
+    </div>
+    <div class="header-right">
+      <img class="admin-avatar" id="admin-avatar" src="" alt="">
+      <span class="admin-name" id="admin-name"></span>
+      <a href="EdgeLog_v61.html" class="btn-header primary">⚡ Open App</a>
+      <button class="btn-header" onclick="doSignOut()">Sign Out</button>
+    </div>
+  </header>
+
+  <!-- Tabs -->
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('overview')">Overview</button>
+    <button class="tab-btn" onclick="switchTab('users')">Users</button>
+    <button class="tab-btn" onclick="switchTab('logins')">Login Events</button>
+    <button class="tab-btn" onclick="switchTab('analytics')">Analytics</button>
+  </div>
+
+  <div class="main-content">
+
+    <!-- ── OVERVIEW TAB ── -->
+    <div class="tab-panel active" id="tab-overview">
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-label">Total Users</div><div class="stat-value purple" id="s-total">—</div><div class="stat-sub">all time</div></div>
+        <div class="stat-card"><div class="stat-label">Active</div><div class="stat-value green" id="s-active">—</div><div class="stat-sub">not blocked</div></div>
+        <div class="stat-card"><div class="stat-label">Today's Logins</div><div class="stat-value gold" id="s-today">—</div><div class="stat-sub">unique sessions</div></div>
+        <div class="stat-card"><div class="stat-label">Total Sessions</div><div class="stat-value blue" id="s-sessions">—</div><div class="stat-sub">all logins ever</div></div>
+        <div class="stat-card"><div class="stat-label">Blocked</div><div class="stat-value red" id="s-blocked">—</div><div class="stat-sub">access denied</div></div>
+      </div>
+
+      <div class="chart-row">
+        <div class="chart-card">
+          <div class="chart-title">Logins — Last 7 Days</div>
+          <div class="bar-chart" id="chart-7d"></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Device Breakdown</div>
+          <div class="device-list" id="chart-devices"></div>
+        </div>
+      </div>
+
+      <div class="section-hdr"><div class="section-title">Recent Login Activity</div><button class="btn-sm" onclick="loadAll()">↻ Refresh</button></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>User</th><th>Time</th><th>Device</th><th>Platform</th><th>Timezone</th><th>Screen</th></tr></thead>
+          <tbody id="recent-tbody"><tr><td colspan="6"><div class="table-empty"><div class="loading-spinner"></div></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── USERS TAB ── -->
+    <div class="tab-panel" id="tab-users">
+      <div class="section-hdr">
+        <div class="section-title">All Users</div>
+        <div class="toolbar">
+          <input class="search-input" type="text" id="user-search" placeholder="Search…" oninput="filterUsers()">
+          <select class="filter-select" id="user-filter" onchange="filterUsers()">
+            <option value="all">All</option>
+            <option value="active">Active</option>
+            <option value="blocked">Blocked</option>
+          </select>
+          <button class="btn-sm" onclick="loadAll()">↻ Refresh</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>User</th><th>Status</th><th>Logins</th><th>Last Seen</th><th>Joined</th><th>Last Device</th><th>Actions</th></tr></thead>
+          <tbody id="users-tbody"><tr><td colspan="7"><div class="table-empty"><div class="loading-spinner"></div></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── LOGIN EVENTS TAB ── -->
+    <div class="tab-panel" id="tab-logins">
+      <div class="section-hdr">
+        <div class="section-title">All Login Events</div>
+        <div class="toolbar">
+          <input class="search-input" type="text" id="event-search" placeholder="Search email…" oninput="filterEvents()">
+          <select class="filter-select" id="event-days" onchange="filterEvents()">
+            <option value="7">Last 7 days</option>
+            <option value="30">Last 30 days</option>
+            <option value="90">Last 90 days</option>
+            <option value="9999">All time</option>
+          </select>
+          <button class="btn-sm" onclick="loadAll()">↻ Refresh</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>User</th><th>Email</th><th>Time</th><th>Device</th><th>Platform</th><th>Timezone</th><th>Screen</th><th>Referrer</th></tr></thead>
+          <tbody id="events-tbody"><tr><td colspan="8"><div class="table-empty"><div class="loading-spinner"></div></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── ANALYTICS TAB ── -->
+    <div class="tab-panel" id="tab-analytics">
+      <div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
+        <div class="stat-card"><div class="stat-label">Avg Logins / User</div><div class="stat-value purple" id="a-avg">—</div><div class="stat-sub">engagement metric</div></div>
+        <div class="stat-card"><div class="stat-label">Most Active User</div><div class="stat-value gold" id="a-top" style="font-size:14px;margin-top:4px">—</div><div class="stat-sub" id="a-top-count"></div></div>
+        <div class="stat-card"><div class="stat-label">New This Week</div><div class="stat-value green" id="a-new">—</div><div class="stat-sub">new signups</div></div>
+      </div>
+
+      <div class="chart-row">
+        <div class="chart-card">
+          <div class="chart-title">Top Users by Login Count</div>
+          <div id="top-users-list" style="display:flex;flex-direction:column;gap:10px;margin-top:8px;"></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Login Activity by Hour (UTC)</div>
+          <div class="bar-chart" id="chart-hourly" style="gap:3px;"></div>
+        </div>
+      </div>
+
+      <div class="chart-card" style="margin-bottom:24px;">
+        <div class="chart-title">User Growth Over Time</div>
+        <div class="bar-chart" id="chart-growth" style="height:120px;"></div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /admin-app -->
+
+<!-- USER DETAIL MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <div class="modal-title">User Details</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div id="modal-body"><div class="table-empty"><div class="loading-spinner"></div></div></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="firebase-config.js"></script>
+<script type="module">
+import { initializeApp }   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, collection, getDocs, doc, updateDoc,
+         query, orderBy, limit, where, getDoc, Timestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const app  = initializeApp(FIREBASE_CONFIG);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+let allUsers  = [];
+let allEvents = [];
+
+// ── AUTH ──
+onAuthStateChanged(auth, async (user) => {
+  if (!user) { window.location.href = 'login.html'; return; }
+  if (user.email !== ADMIN_EMAIL) {
+    document.getElementById('auth-gate').innerHTML =
+      '<p style="color:#ef5350;font-family:var(--mono)">⛔ Admin access only.</p>' +
+      '<a href="EdgeLog_v61.html" style="color:var(--purple2);font-family:var(--mono);font-size:11px;margin-top:12px">Go to App →</a>';
+    return;
+  }
+  document.getElementById('auth-gate').style.display = 'none';
+  document.getElementById('admin-app').style.display = 'block';
+  document.getElementById('admin-avatar').src = user.photoURL || '';
+  document.getElementById('admin-name').textContent = user.displayName || user.email;
+  loadAll();
+});
+
+// ── LOAD ALL DATA ──
+window.loadAll = async function() {
+  try {
+    // Load users
+    const usersSnap = await getDocs(query(collection(db, 'users'), orderBy('lastLogin', 'desc')));
+    allUsers = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    // Load login events
+    const eventsSnap = await getDocs(query(collection(db, 'loginEvents'), orderBy('timestamp', 'desc'), limit(500)));
+    allEvents = eventsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    renderStats();
+    renderCharts();
+    renderRecentActivity();
+    renderUsersTable(allUsers);
+    renderEventsTable(allEvents);
+    renderAnalytics();
+    showToast('Data refreshed', 'success');
+  } catch(e) {
+    showToast('Load error: ' + e.message, 'error');
+    console.error(e);
+  }
+};
+
+// ── STATS ──
+function renderStats() {
+  const total   = allUsers.length;
+  const active  = allUsers.filter(u => u.status !== 'blocked').length;
+  const blocked = allUsers.filter(u => u.status === 'blocked').length;
+  const todayStr = new Date().toDateString();
+  const today   = allEvents.filter(e => {
+    const d = toDate(e.timestamp);
+    return d && d.toDateString() === todayStr;
+  }).length;
+  const sessions = allEvents.length;
+
+  setText('s-total',    total);
+  setText('s-active',   active);
+  setText('s-today',    today);
+  setText('s-sessions', sessions);
+  setText('s-blocked',  blocked);
+}
+
+// ── CHARTS ──
+function renderCharts() {
+  // 7-day bar chart
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    days.push({ label: d.toLocaleDateString('en',{weekday:'short'}), date: d.toDateString(), count: 0 });
+  }
+  allEvents.forEach(e => {
+    const d = toDate(e.timestamp);
+    if (!d) return;
+    const ds = d.toDateString();
+    const slot = days.find(x => x.date === ds);
+    if (slot) slot.count++;
+  });
+  const maxDay = Math.max(...days.map(d => d.count), 1);
+  const chart7 = document.getElementById('chart-7d');
+  chart7.innerHTML = days.map(d => `
+    <div class="bar-col">
+      <div class="bar-val">${d.count || ''}</div>
+      <div class="bar" style="height:${Math.max((d.count/maxDay)*100,2)}px;background:${d.count>0?'var(--purple)':'var(--bg3)'}"></div>
+      <div class="bar-label">${d.label}</div>
+    </div>`).join('');
+
+  // Device breakdown
+  const devices = {};
+  allEvents.forEach(e => {
+    const ua = e.userAgent || '';
+    let type = 'Desktop';
+    if (/iPhone|iPad|iPod/i.test(ua)) type = 'iPhone/iPad';
+    else if (/Android/i.test(ua)) type = 'Android';
+    else if (/Mac/i.test(ua)) type = 'Mac';
+    else if (/Windows/i.test(ua)) type = 'Windows';
+    devices[type] = (devices[type] || 0) + 1;
+  });
+  const total = allEvents.length || 1;
+  const sortedDevices = Object.entries(devices).sort((a,b) => b[1]-a[1]);
+  const colors = ['var(--purple)','var(--green2)','var(--gold)','var(--blue)','var(--red)'];
+  document.getElementById('chart-devices').innerHTML = sortedDevices.map(([name, count], i) => `
+    <div class="device-row">
+      <div class="device-name">${name}</div>
+      <div class="device-bar-wrap"><div class="device-bar-fill" style="width:${(count/total*100).toFixed(0)}%;background:${colors[i%colors.length]}"></div></div>
+      <div class="device-pct">${(count/total*100).toFixed(0)}%</div>
+    </div>`).join('') || '<div style="color:var(--text3);font-family:var(--mono);font-size:11px">No data yet</div>';
+}
+
+// ── RECENT ACTIVITY ──
+function renderRecentActivity() {
+  const tbody = document.getElementById('recent-tbody');
+  const recent = allEvents.slice(0, 50);
+  if (!recent.length) { tbody.innerHTML = '<tr><td colspan="6"><div class="table-empty">No login events yet</div></td></tr>'; return; }
+  tbody.innerHTML = recent.map(e => {
+    const ua = e.userAgent || '';
+    const device = getDevice(ua);
+    return `<tr>
+      <td><div class="user-cell">
+        ${e.photoURL ? `<img class="uavatar" src="${e.photoURL}" alt="">` : `<div class="uavatar-fb">${(e.displayName||e.email||'?')[0].toUpperCase()}</div>`}
+        <div><div class="u-name">${e.displayName || '—'}</div></div>
+      </div></td>
+      <td class="date-sm">${formatDate(e.timestamp)}</td>
+      <td><span class="device-tag">${device}</span></td>
+      <td class="mono-sm">${e.platform || '—'}</td>
+      <td class="mono-sm">${e.timezone || '—'}</td>
+      <td class="mono-sm">${e.screenW ? e.screenW+'×'+e.screenH : '—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── USERS TABLE ──
+function renderUsersTable(users) {
+  const tbody = document.getElementById('users-tbody');
+  if (!users.length) { tbody.innerHTML = '<tr><td colspan="7"><div class="table-empty">No users found</div></td></tr>'; return; }
+  tbody.innerHTML = users.map(u => {
+    const isAdmin = u.email === ADMIN_EMAIL;
+    const blocked = u.status === 'blocked';
+    const initial = (u.displayName || u.email || '?')[0].toUpperCase();
+    const ua      = u.lastSession?.userAgent || '';
+    const device  = ua ? getDevice(ua) : '—';
+    const badge   = isAdmin
+      ? `<span class="badge badge-admin"><span class="badge-dot"></span>Admin</span>`
+      : blocked
+        ? `<span class="badge badge-blocked"><span class="badge-dot"></span>Blocked</span>`
+        : `<span class="badge badge-active"><span class="badge-dot"></span>Active</span>`;
+    const actions = isAdmin ? '—' : blocked
+      ? `<button class="btn-action btn-unblock" onclick="setStatus('${u.id}','active')">Unblock</button>`
+      : `<button class="btn-action btn-block" onclick="setStatus('${u.id}','blocked')">Block</button>`;
+    return `<tr>
+      <td><div class="user-cell">
+        ${u.photoURL ? `<img class="uavatar" src="${u.photoURL}" alt="" onerror="this.style.display='none'">` : `<div class="uavatar-fb">${initial}</div>`}
+        <div><div class="u-name">${u.displayName||'—'}</div><div class="u-email">${u.email}</div></div>
+      </div></td>
+      <td>${badge}</td>
+      <td class="mono-sm">${u.loginCount||1}</td>
+      <td class="date-sm">${formatDate(u.lastLogin)}</td>
+      <td class="date-sm">${formatDate(u.createdAt)}</td>
+      <td><span class="device-tag">${device}</span></td>
+      <td><div class="actions-cell">
+        ${actions}
+        <button class="btn-action btn-detail" onclick="openUserDetail('${u.id}')">Details</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+window.filterUsers = function() {
+  const q = document.getElementById('user-search').value.toLowerCase();
+  const s = document.getElementById('user-filter').value;
+  renderUsersTable(allUsers.filter(u => {
+    const mq = !q || (u.displayName||'').toLowerCase().includes(q) || (u.email||'').toLowerCase().includes(q);
+    const ms = s === 'all' || (s === 'blocked' ? u.status === 'blocked' : u.status !== 'blocked');
+    return mq && ms;
+  }));
+};
+
+// ── EVENTS TABLE ──
+function renderEventsTable(events) {
+  const tbody = document.getElementById('events-tbody');
+  if (!events.length) { tbody.innerHTML = '<tr><td colspan="8"><div class="table-empty">No login events yet</div></td></tr>'; return; }
+  tbody.innerHTML = events.map(e => {
+    const ua = e.userAgent || '';
+    return `<tr class="event-row">
+      <td><div class="user-cell">
+        ${e.photoURL ? `<img class="uavatar" src="${e.photoURL}" alt="">` : `<div class="uavatar-fb">${(e.displayName||e.email||'?')[0].toUpperCase()}</div>`}
+        <span style="font-size:13px">${e.displayName||'—'}</span>
+      </div></td>
+      <td class="mono-sm">${e.email||'—'}</td>
+      <td class="date-sm">${formatDate(e.timestamp)}</td>
+      <td><span class="device-tag">${getDevice(ua)}</span></td>
+      <td class="mono-sm">${e.platform||'—'}</td>
+      <td class="mono-sm">${e.timezone||'—'}</td>
+      <td class="mono-sm">${e.screenW?e.screenW+'×'+e.screenH:'—'}</td>
+      <td class="mono-sm" style="max-width:120px;overflow:hidden;text-overflow:ellipsis">${e.referrer||'direct'}</td>
+    </tr>`;
+  }).join('');
+}
+
+window.filterEvents = function() {
+  const q    = document.getElementById('event-search').value.toLowerCase();
+  const days = parseInt(document.getElementById('event-days').value);
+  const cutoff = Date.now() - days * 86400000;
+  renderEventsTable(allEvents.filter(e => {
+    const mq = !q || (e.email||'').toLowerCase().includes(q) || (e.displayName||'').toLowerCase().includes(q);
+    const mt = toMs(e.timestamp) >= cutoff;
+    return mq && mt;
+  }));
+};
+
+// ── ANALYTICS ──
+function renderAnalytics() {
+  const total = allUsers.length || 1;
+  const totalLogins = allUsers.reduce((s,u) => s + (u.loginCount||1), 0);
+  setText('a-avg', (totalLogins / total).toFixed(1));
+
+  const top = [...allUsers].sort((a,b) => (b.loginCount||1)-(a.loginCount||1))[0];
+  if (top) {
+    document.getElementById('a-top').textContent = top.displayName || top.email;
+    document.getElementById('a-top-count').textContent = (top.loginCount||1) + ' logins';
+  }
+
+  const weekAgo = Date.now() - 7*86400000;
+  const newUsers = allUsers.filter(u => toMs(u.createdAt) >= weekAgo).length;
+  setText('a-new', newUsers);
+
+  // Top users bar chart
+  const topUsers = [...allUsers].sort((a,b) => (b.loginCount||1)-(a.loginCount||1)).slice(0,8);
+  const maxLogins = Math.max(...topUsers.map(u => u.loginCount||1), 1);
+  document.getElementById('top-users-list').innerHTML = topUsers.map(u => `
+    <div class="device-row">
+      <div class="device-name" style="font-size:11px">${u.displayName||u.email}</div>
+      <div class="device-bar-wrap"><div class="device-bar-fill" style="width:${((u.loginCount||1)/maxLogins*100).toFixed(0)}%"></div></div>
+      <div class="device-pct">${u.loginCount||1}</div>
+    </div>`).join('');
+
+  // Hourly distribution
+  const hours = Array(24).fill(0);
+  allEvents.forEach(e => {
+    const d = toDate(e.timestamp);
+    if (d) hours[d.getUTCHours()]++;
+  });
+  const maxH = Math.max(...hours, 1);
+  document.getElementById('chart-hourly').innerHTML = hours.map((c,h) => `
+    <div class="bar-col" style="flex:1">
+      <div class="bar" style="height:${Math.max((c/maxH)*100,1)}px;background:${c>0?'var(--blue)':'var(--bg3)'}"></div>
+      <div class="bar-label" style="font-size:7px">${h%6===0?h+'h':''}</div>
+    </div>`).join('');
+
+  // User growth (by week)
+  const weeks = [];
+  for (let i = 7; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i*7);
+    weeks.push({ label: `W${8-i}`, date: d, count: 0 });
+  }
+  allUsers.forEach(u => {
+    const d = toDate(u.createdAt);
+    if (!d) return;
+    for (let i = weeks.length-1; i >= 0; i--) {
+      if (d <= weeks[i].date) { weeks[i].count++; break; }
+    }
+  });
+  const maxW = Math.max(...weeks.map(w => w.count), 1);
+  document.getElementById('chart-growth').innerHTML = weeks.map(w => `
+    <div class="bar-col">
+      <div class="bar-val">${w.count||''}</div>
+      <div class="bar" style="height:${Math.max((w.count/maxW)*100,1)}px;background:var(--green2)"></div>
+      <div class="bar-label">${w.label}</div>
+    </div>`).join('');
+}
+
+// ── USER DETAIL MODAL ──
+window.openUserDetail = async function(uid) {
+  document.getElementById('modal-overlay').classList.add('open');
+  const mb = document.getElementById('modal-body');
+  mb.innerHTML = '<div class="table-empty"><div class="loading-spinner"></div></div>';
+
+  try {
+    const u = allUsers.find(x => x.id === uid);
+    if (!u) return;
+
+    // Load login history subcollection
+    const histSnap = await getDocs(query(
+      collection(db, 'users', uid, 'loginHistory'),
+      orderBy('timestamp', 'desc'), limit(20)
+    ));
+    const history = histSnap.docs.map(d => d.data());
+
+    const initial = (u.displayName || u.email || '?')[0].toUpperCase();
+    mb.innerHTML = `
+      <div class="modal-user">
+        ${u.photoURL ? `<img class="modal-avatar" src="${u.photoURL}" alt="">` : `<div class="uavatar-fb" style="width:52px;height:52px;font-size:20px">${initial}</div>`}
+        <div>
+          <div class="modal-user-name">${u.displayName || '—'}</div>
+          <div class="modal-user-email">${u.email}</div>
+        </div>
+      </div>
+      <div class="detail-grid">
+        <div class="detail-item"><div class="detail-lbl">User ID</div><div class="detail-val">${u.uid}</div></div>
+        <div class="detail-item"><div class="detail-lbl">Status</div><div class="detail-val">${u.status === 'blocked' ? '🔴 Blocked' : '🟢 Active'}</div></div>
+        <div class="detail-item"><div class="detail-lbl">Total Logins</div><div class="detail-val">${u.loginCount || 1}</div></div>
+        <div class="detail-item"><div class="detail-lbl">Joined</div><div class="detail-val">${formatDate(u.createdAt)}</div></div>
+        <div class="detail-item"><div class="detail-lbl">Last Login</div><div class="detail-val">${formatDate(u.lastLogin)}</div></div>
+        <div class="detail-item"><div class="detail-lbl">Last Device</div><div class="detail-val">${getDevice(u.lastSession?.userAgent||'')}</div></div>
+        <div class="detail-item"><div class="detail-lbl">Timezone</div><div class="detail-val">${u.lastSession?.timezone || '—'}</div></div>
+        <div class="detail-item"><div class="detail-lbl">Screen</div><div class="detail-val">${u.lastSession?.screenW ? u.lastSession.screenW+'×'+u.lastSession.screenH : '—'}</div></div>
+      </div>
+      <div class="history-title">Login History (Last 20)</div>
+      ${history.length ? history.map(h => `
+        <div class="history-item">
+          <div class="h-dot"></div>
+          <div>
+            <div class="h-text">${getDevice(h.userAgent||'')} · ${h.platform||'—'} · ${h.timezone||'—'}</div>
+            <div class="h-meta">${formatDate(h.timestamp)} · Screen: ${h.screenW?h.screenW+'×'+h.screenH:'—'} · Ref: ${h.referrer||'direct'}</div>
+          </div>
+        </div>`).join('')
+      : '<div class="h-meta" style="padding:12px 0">No history recorded yet (logs on next sign-in)</div>'}
+    `;
+  } catch(e) {
+    mb.innerHTML = `<div class="table-empty">Error loading details: ${e.message}</div>`;
+  }
+};
+
+window.closeModal = function(e) {
+  if (!e || e.target === document.getElementById('modal-overlay')) {
+    document.getElementById('modal-overlay').classList.remove('open');
+  }
+};
+
+// ── BLOCK / UNBLOCK ──
+window.setStatus = async function(uid, status) {
+  try {
+    await updateDoc(doc(db, 'users', uid), { status });
+    const u = allUsers.find(u => u.id === uid);
+    if (u) u.status = status;
+    filterUsers();
+    renderStats();
+    showToast(status === 'blocked' ? 'User blocked.' : 'User unblocked.', status === 'blocked' ? 'error' : 'success');
+  } catch(e) { showToast('Error: ' + e.message, 'error'); }
+};
+
+// ── SIGN OUT ──
+window.doSignOut = async function() { await signOut(auth); window.location.href = 'login.html'; };
+
+// ── TABS ──
+window.switchTab = function(id) {
+  document.querySelectorAll('.tab-btn').forEach((b,i) => {
+    const ids = ['overview','users','logins','analytics'];
+    b.classList.toggle('active', ids[i] === id);
+  });
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-'+id));
+};
+
+// ── HELPERS ──
+function getDevice(ua) {
+  if (!ua) return '—';
+  if (/iPhone/i.test(ua)) return 'iPhone';
+  if (/iPad/i.test(ua))   return 'iPad';
+  if (/Android/i.test(ua)) return 'Android';
+  if (/Mac/i.test(ua))    return 'Mac';
+  if (/Windows/i.test(ua)) return 'Windows';
+  if (/Linux/i.test(ua))  return 'Linux';
+  return 'Unknown';
+}
+function formatDate(ts) {
+  if (!ts) return '—';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  if (isNaN(d)) return '—';
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})
+    + ' ' + d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+}
+function toDate(ts) {
+  if (!ts) return null;
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  return isNaN(d) ? null : d;
+}
+function toMs(ts) { const d = toDate(ts); return d ? d.getTime() : 0; }
+function setText(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }
+
+let toastTimer;
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast'+(type?' '+type:'')+' show';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.className = 'toast'; }, 3000);
+}
+</script>
+</body>
+</html>

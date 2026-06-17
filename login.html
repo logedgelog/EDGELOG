@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EdgeLog — Sign In</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=IBM+Plex+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:     #09090e;
+  --bg1:    #0f0f18;
+  --bg2:    #141420;
+  --bg3:    #1c1c2a;
+  --border: rgba(255,255,255,0.09);
+  --purple: #7c5cfc;
+  --purple2:#a488ff;
+  --green:  #26a69a;
+  --text:   #f0f0f8;
+  --text2:  #b0b0c8;
+  --text3:  #8484a0;
+  --mono:   'IBM Plex Mono', monospace;
+  --ui:     'DM Sans', sans-serif;
+  --display:'Cormorant Garamond', serif;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--ui);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Ambient background glow */
+body::before {
+  content: '';
+  position: fixed;
+  top: -30%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 800px;
+  height: 600px;
+  background: radial-gradient(ellipse, rgba(124,92,252,0.12) 0%, transparent 70%);
+  pointer-events: none;
+}
+body::after {
+  content: '';
+  position: fixed;
+  bottom: -20%;
+  left: 20%;
+  width: 500px;
+  height: 400px;
+  background: radial-gradient(ellipse, rgba(38,166,154,0.07) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* Grid overlay */
+.grid-overlay {
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none;
+}
+
+.login-card {
+  position: relative;
+  z-index: 10;
+  background: var(--bg1);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 52px 48px 44px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow:
+    0 0 0 1px rgba(124,92,252,0.08),
+    0 40px 80px rgba(0,0,0,0.6),
+    0 0 60px rgba(124,92,252,0.06);
+  text-align: center;
+}
+
+.logo-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+.logo-wrap img {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  object-fit: contain;
+}
+.logo-text {
+  font-family: var(--display);
+  font-size: 32px;
+  font-weight: 400;
+  font-style: italic;
+  color: var(--text);
+}
+.logo-text span { color: var(--purple2); }
+
+.tagline {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 36px;
+}
+
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: 0 0 36px;
+}
+
+.sign-in-label {
+  font-size: 13px;
+  color: var(--text2);
+  margin-bottom: 20px;
+  font-family: var(--ui);
+}
+
+.btn-google {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 24px;
+  background: #fff;
+  color: #1f1f1f;
+  border: none;
+  border-radius: 10px;
+  font-family: var(--ui);
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+}
+.btn-google:hover {
+  background: #f5f5f5;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+}
+.btn-google:active { transform: translateY(0); }
+.btn-google svg { flex-shrink: 0; }
+
+.btn-google.loading {
+  opacity: 0.7;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.status-msg {
+  margin-top: 20px;
+  font-family: var(--mono);
+  font-size: 11px;
+  min-height: 20px;
+  color: var(--text3);
+  transition: color 0.2s;
+}
+.status-msg.error { color: #ef5350; }
+.status-msg.success { color: var(--green); }
+
+.back-link {
+  display: block;
+  margin-top: 28px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text3);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.back-link:hover { color: var(--text2); }
+
+.secure-note {
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--text3);
+  text-transform: uppercase;
+}
+.secure-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 6px rgba(38,166,154,0.6);
+  flex-shrink: 0;
+}
+
+/* Spinner */
+.spinner {
+  width: 18px; height: 18px;
+  border: 2px solid rgba(0,0,0,0.2);
+  border-top-color: var(--purple);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: none;
+}
+.btn-google.loading .spinner { display: block; }
+.btn-google.loading .google-icon { display: none; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 480px) {
+  .login-card { padding: 40px 28px 36px; margin: 16px; }
+}
+</style>
+</head>
+<body>
+<div class="grid-overlay"></div>
+
+<div class="login-card">
+  <div class="logo-wrap">
+    <img id="logo-img" src="" alt="EdgeLog">
+    <div class="logo-text">Edge<span>Log</span></div>
+  </div>
+  <div class="tagline">Logging Into Success</div>
+  <div class="divider"></div>
+  <div class="sign-in-label">Sign in to access your trading journal</div>
+
+  <button class="btn-google" id="btn-google" onclick="signInWithGoogle()">
+    <svg class="google-icon" width="20" height="20" viewBox="0 0 48 48">
+      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+      <path fill="none" d="M0 0h48v48H0z"/>
+    </svg>
+    <div class="spinner"></div>
+    Continue with Google
+  </button>
+
+  <div class="status-msg" id="status-msg"></div>
+  <a href="index.html" class="back-link">← Back to home</a>
+
+  <div class="secure-note">
+    <div class="secure-dot"></div>
+    Secured by Firebase Auth · No passwords stored
+  </div>
+</div>
+
+<!-- Firebase SDKs -->
+<script src="firebase-config.js"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, signInWithPopup, signInWithRedirect, getRedirectResult, GoogleAuthProvider, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc, collection, addDoc, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const app  = initializeApp(FIREBASE_CONFIG);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+const provider = new GoogleAuthProvider();
+
+// Restore logo from landing page (stored in sessionStorage) or hide
+const logoImg = document.getElementById('logo-img');
+const storedLogo = sessionStorage.getItem('el_logo');
+if (storedLogo) { logoImg.src = storedLogo; }
+else { logoImg.style.display = 'none'; }
+
+// If already signed in → redirect
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    await recordUser(user);
+    redirect(user.email);
+  }
+});
+
+// Check for redirect result on page load
+getRedirectResult(auth).then(async (result) => {
+  if (result && result.user) {
+    const user = result.user;
+    const msg = document.getElementById('status-msg');
+    msg.textContent = `Welcome, ${user.displayName}! Redirecting…`;
+    msg.classList.add('success');
+    await recordUser(user);
+    setTimeout(() => redirect(user.email), 800);
+  }
+}).catch((err) => {
+  console.error('Redirect result error:', err);
+});
+
+window.signInWithGoogle = async function() {
+  const btn = document.getElementById('btn-google');
+  const msg = document.getElementById('status-msg');
+  btn.classList.add('loading');
+  msg.textContent = '';
+  msg.className = 'status-msg';
+
+  // Detect mobile/Safari — use redirect instead of popup
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+  if (isMobile || isSafari) {
+    // Redirect flow — no popup, works on all mobile browsers
+    try {
+      await signInWithRedirect(auth, provider);
+    } catch (err) {
+      btn.classList.remove('loading');
+      msg.textContent = 'Sign-in failed. Please try again.';
+      msg.classList.add('error');
+    }
+  } else {
+    // Desktop popup flow
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const user   = result.user;
+      msg.textContent = `Welcome, ${user.displayName}! Redirecting…`;
+      msg.classList.add('success');
+      await recordUser(user);
+      setTimeout(() => redirect(user.email), 800);
+    } catch (err) {
+      btn.classList.remove('loading');
+      if (err.code !== 'auth/popup-closed-by-user') {
+        msg.textContent = 'Sign-in failed. Please try again.';
+        msg.classList.add('error');
+      }
+    }
+  }
+};
+
+async function recordUser(user) {
+  const ref  = doc(db, 'users', user.uid);
+  const snap = await getDoc(ref);
+  const now  = serverTimestamp();
+
+  // Collect session metadata
+  const sessionData = {
+    timestamp:   now,
+    userAgent:   navigator.userAgent,
+    platform:    navigator.platform,
+    language:    navigator.language,
+    screenW:     screen.width,
+    screenH:     screen.height,
+    timezone:    Intl.DateTimeFormat().resolvedOptions().timeZone,
+    referrer:    document.referrer || 'direct',
+  };
+
+  if (!snap.exists()) {
+    await setDoc(ref, {
+      uid:         user.uid,
+      email:       user.email,
+      displayName: user.displayName,
+      photoURL:    user.photoURL,
+      createdAt:   now,
+      lastLogin:   now,
+      loginCount:  1,
+      status:      'active',
+      isAdmin:     user.email === ADMIN_EMAIL,
+      lastSession: sessionData
+    });
+  } else {
+    const data = snap.data();
+    await setDoc(ref, {
+      ...data,
+      displayName: user.displayName,
+      photoURL:    user.photoURL,
+      lastLogin:   now,
+      loginCount:  (data.loginCount || 0) + 1,
+      lastSession: sessionData
+    }, { merge: true });
+  }
+
+  // Write to loginHistory subcollection (one doc per login)
+  const histRef = collection(db, 'users', user.uid, 'loginHistory');
+  await addDoc(histRef, {
+    ...sessionData,
+    email:       user.email,
+    displayName: user.displayName,
+  });
+
+  // Also write to global loginEvents collection for admin monitoring
+  const eventRef = collection(db, 'loginEvents');
+  await addDoc(eventRef, {
+    uid:         user.uid,
+    email:       user.email,
+    displayName: user.displayName,
+    photoURL:    user.photoURL,
+    ...sessionData,
+  });
+}
+
+function redirect(email) {
+  if (email === ADMIN_EMAIL) {
+    // Admin gets choice — go to app or admin panel
+    window.location.href = 'EdgeLog_v61.html';
+  } else {
+    window.location.href = 'EdgeLog_v61.html';
+  }
+}
+</script>
+</body>
+</html>
