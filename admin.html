@@ -98,6 +98,32 @@ tbody td { padding:12px 14px; vertical-align:middle; }
 .actions-cell { display:flex; gap:5px; }
 .btn-action { padding:4px 10px; border-radius:6px; font-family:var(--mono); font-size:9px; letter-spacing:.1em; text-transform:uppercase; cursor:pointer; border:1px solid var(--border); background:var(--bg3); color:var(--text2); transition:all .15s; }
 .btn-block  { color:var(--red);    border-color:rgba(239,83,80,.3); }
+
+/* USER DASHBOARD MODAL */
+#user-dashboard-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.92); z-index:1000; overflow-y:auto; padding:20px; }
+#user-dashboard-modal.active { display:block; }
+.dashboard-container { max-width:1200px; margin:0 auto; background:var(--bg1); border:1px solid var(--border); border-radius:16px; padding:24px; position:relative; }
+.dashboard-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:24px; padding-bottom:16px; border-bottom:1px solid var(--border); }
+.dashboard-user-info { display:flex; align-items:center; gap:12px; }
+.dashboard-close { position:absolute; top:16px; right:16px; background:var(--bg3); border:1px solid var(--border); width:36px; height:36px; border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:18px; color:var(--text2); }
+.dashboard-close:hover { background:var(--bg4); color:var(--text); }
+.dashboard-stats { display:grid; grid-template-columns:repeat(6,1fr); gap:12px; margin-bottom:24px; }
+.dashboard-stat { background:var(--bg2); border:1px solid var(--border); border-radius:10px; padding:14px; }
+.dashboard-stat-label { font-family:var(--mono); font-size:8px; letter-spacing:.15em; text-transform:uppercase; color:var(--text3); margin-bottom:6px; }
+.dashboard-stat-value { font-family:var(--mono); font-size:20px; font-weight:500; line-height:1; }
+.dashboard-stat-value.positive { color:var(--green2); }
+.dashboard-stat-value.negative { color:var(--red); }
+.dashboard-section { margin-bottom:20px; }
+.dashboard-section-title { font-family:var(--mono); font-size:9px; letter-spacing:.15em; text-transform:uppercase; color:var(--text2); margin-bottom:12px; }
+.trades-list { max-height:600px; overflow-y:auto; }
+.trade-row { background:var(--bg2); border:1px solid var(--border); border-radius:8px; padding:12px; margin-bottom:8px; display:grid; grid-template-columns:80px 1fr 80px 80px 100px; gap:12px; align-items:center; font-size:12px; }
+.trade-date { font-family:var(--mono); color:var(--text3); }
+.trade-setup { color:var(--text2); }
+.trade-pnl { font-family:var(--mono); font-weight:500; text-align:right; }
+.trade-pnl.positive { color:var(--green2); }
+.trade-pnl.negative { color:var(--red); }
+.trade-rmul { font-family:var(--mono); text-align:right; color:var(--text3); }
+.trade-grade { font-family:var(--mono); font-size:10px; padding:2px 6px; border-radius:4px; background:var(--bg3); border:1px solid var(--border); text-align:center; }
 .btn-block:hover   { background:rgba(239,83,80,.1); }
 .btn-unblock { color:var(--green2); border-color:rgba(38,166,154,.3); }
 .btn-unblock:hover { background:rgba(38,166,154,.1); }
@@ -489,6 +515,7 @@ function renderUsersTable(users) {
       <td><span class="device-tag">${device}</span></td>
       <td><div class="actions-cell">
         ${actions}
+        <button class="btn-action" style="color:var(--blue);border-color:rgba(66,165,245,.3);" onclick="viewUserDashboard('${u.id}','${u.email.replace(/'/g,"\\'")}','${(u.displayName||u.email).replace(/'/g,"\\'")}','${u.photoURL||''}')">Dashboard</button>
         <button class="btn-action btn-detail" onclick="openUserDetail('${u.id}')">Details</button>
       </div></td>
     </tr>`;
@@ -714,6 +741,131 @@ function showToast(msg, type='') {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => { t.className = 'toast'; }, 3000);
 }
-</script>
+
+// ── ADMIN DASHBOARD VIEWER ──
+let selectedUserForDashboard = null;
+
+async function viewUserDashboard(uid, email, displayName, photoURL) {
+  selectedUserForDashboard = { uid, email, displayName, photoURL };
+  const modal = document.getElementById('user-dashboard-modal');
+  modal.classList.add('active');
+  
+  // Set user info
+  const userInfoEl = document.getElementById('dashboard-user-info');
+  userInfoEl.innerHTML = `
+    <div>${photoURL ? '<img src="'+photoURL+'" style="width:40px;height:40px;border-radius:50%;object-fit:cover;">' : '<div style="width:40px;height:40px;border-radius:50%;background:var(--purple);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;">'+displayName.charAt(0)+'</div>'}</div>
+    <div>
+      <div style="font-size:14px;font-weight:500;">${displayName}</div>
+      <div style="font-family:var(--mono);font-size:11px;color:var(--text3);">${email}</div>
+    </div>
+  `;
+  
+  // Load user's trades and calculate stats
+  try {
+    const userRef = doc(db, 'users', uid);
+    const userSnap = await getDoc(userRef);
+    
+    if (!userSnap.exists()) {
+      document.getElementById('dashboard-stats-grid').innerHTML = '<div style="grid-column:1/-1;color:var(--red);">User not found</div>';
+      return;
+    }
+    
+    const userData = userSnap.data();
+    const trades = userData.trades || [];
+    
+    // Calculate stats
+    const winningTrades = trades.filter(t => (t.pnl || 0) > 0);
+    const losingTrades = trades.filter(t => (t.pnl || 0) < 0);
+    const totalPnL = trades.reduce((s, t) => s + (t.pnl || 0), 0);
+    const winRate = trades.length > 0 ? Math.round((winningTrades.length / trades.length) * 100) : 0;
+    const avgWin = winningTrades.length > 0 ? Math.round(winningTrades.reduce((s, t) => s + (t.pnl || 0), 0) / winningTrades.length) : 0;
+    const avgLoss = losingTrades.length > 0 ? Math.round(losingTrades.reduce((s, t) => s + (t.pnl || 0), 0) / losingTrades.length) : 0;
+    
+    // Render stats
+    const statsGrid = document.getElementById('dashboard-stats-grid');
+    statsGrid.innerHTML = `
+      <div class="dashboard-stat">
+        <div class="dashboard-stat-label">Total Trades</div>
+        <div class="dashboard-stat-value">${trades.length}</div>
+      </div>
+      <div class="dashboard-stat">
+        <div class="dashboard-stat-label">Total P&L</div>
+        <div class="dashboard-stat-value ${totalPnL >= 0 ? 'positive' : 'negative'}">$${totalPnL.toLocaleString()}</div>
+      </div>
+      <div class="dashboard-stat">
+        <div class="dashboard-stat-label">Win Rate</div>
+        <div class="dashboard-stat-value">${winRate}%</div>
+      </div>
+      <div class="dashboard-stat">
+        <div class="dashboard-stat-label">Winning Trades</div>
+        <div class="dashboard-stat-value positive">${winningTrades.length}</div>
+      </div>
+      <div class="dashboard-stat">
+        <div class="dashboard-stat-label">Avg Win</div>
+        <div class="dashboard-stat-value positive">$${avgWin}</div>
+      </div>
+      <div class="dashboard-stat">
+        <div class="dashboard-stat-label">Avg Loss</div>
+        <div class="dashboard-stat-value negative">$${avgLoss}</div>
+      </div>
+    `;
+    
+    // Render recent trades (last 20)
+    const tradesContainer = document.getElementById('trades-list-container');
+    if (trades.length === 0) {
+      tradesContainer.innerHTML = '<div style="color:var(--text3);padding:14px;text-align:center;">No trades recorded</div>';
+    } else {
+      const recentTrades = trades.slice(-20).reverse();
+      tradesContainer.innerHTML = recentTrades.map(t => {
+        const d = new Date(t.date || Date.now());
+        const dateStr = (d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear();
+        const pnl = t.pnl || 0;
+        const rMul = t.rMultiple || t.rmultiple || 0;
+        return `
+          <div class="trade-row">
+            <div class="trade-date">${dateStr}</div>
+            <div class="trade-setup">${t.setup || '—'}</div>
+            <div class="trade-pnl ${pnl >= 0 ? 'positive' : 'negative'}">$${pnl}</div>
+            <div class="trade-rmul">${rMul.toFixed(2)}R</div>
+            <div class="trade-grade">${t.confluenceGrade || t.grade || '—'}</div>
+          </div>
+        `;
+      }).join('');
+    }
+  } catch (err) {
+    console.error('Error loading user dashboard:', err);
+    document.getElementById('dashboard-stats-grid').innerHTML = '<div style="grid-column:1/-1;color:var(--red);">Error loading data</div>';
+  }
+}
+
+function closeUserDashboard() {
+  const modal = document.getElementById('user-dashboard-modal');
+  modal.classList.remove('active');
+  selectedUserForDashboard = null;
+}
+
+// Close modal on outside click
+document.addEventListener('click', e => {
+  const modal = document.getElementById('user-dashboard-modal');
+  if (e.target === modal) closeUserDashboard();
+});
+
+</script><!-- USER DASHBOARD MODAL -->
+<div id="user-dashboard-modal">
+  <div class="dashboard-container">
+    <div class="dashboard-header">
+      <div class="dashboard-user-info" id="dashboard-user-info"></div>
+      <button class="dashboard-close" onclick="closeUserDashboard()">×</button>
+    </div>
+    
+    <div class="dashboard-stats" id="dashboard-stats-grid"></div>
+    
+    <div class="dashboard-section">
+      <div class="dashboard-section-title">Recent Trades</div>
+      <div class="trades-list" id="trades-list-container"></div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
