@@ -531,21 +531,26 @@ function setLoading(btnId, loading) {
   if (btn) btn.classList.toggle('loading', loading);
 }
 
+// ── Single auth success handler — guards against double-redirect ───────
+let _redirecting = false;
+function handleAuthSuccess(user, panel) {
+  if (_redirecting) return;
+  _redirecting = true;
+  const statusPanel = panel || 'signin';
+  showMsg(statusPanel, `Welcome, ${user.displayName || user.email}! Redirecting…`, 'success');
+  // recordUser is fire-and-forget — a Firestore error must NOT block the redirect
+  recordUser(user).catch(e => console.warn('recordUser (non-fatal):', e.message));
+  setTimeout(() => redirect(user.email), 700);
+}
+
 // ── Already signed in ─────────────────────────────────────────────────
-onAuthStateChanged(auth, async user => {
-  if (user) {
-    try { await recordUser(user); redirect(user.email); }
-    catch(err) { showMsg('signin', friendlyErr(err), 'error'); }
-  }
+onAuthStateChanged(auth, user => {
+  if (user) handleAuthSuccess(user, 'signin');
 });
 
-// ── Redirect result (mobile Google sign-in return) ────────────────────
-getRedirectResult(auth).then(async result => {
-  if (result && result.user) {
-    showMsg('signin', `Welcome, ${result.user.displayName || result.user.email}! Redirecting…`, 'success');
-    await recordUser(result.user);
-    setTimeout(() => redirect(result.user.email), 800);
-  }
+// ── Redirect result (fallback after popup-blocked → redirect flow) ────
+getRedirectResult(auth, browserPopupRedirectResolver).then(result => {
+  if (result && result.user) handleAuthSuccess(result.user, 'signin');
 }).catch(err => {
   const msg = friendlyErr(err);
   if (msg) showMsg('signin', msg, 'error');
@@ -560,9 +565,7 @@ window.signInEmail = async function() {
   setLoading('btn-signin-email', true);
   try {
     const result = await signInWithEmailAndPassword(auth, email, pw);
-    showMsg('signin', `Welcome back! Redirecting…`, 'success');
-    await recordUser(result.user);
-    setTimeout(() => redirect(result.user.email), 700);
+    handleAuthSuccess(result.user, 'signin');
   } catch(err) {
     setLoading('btn-signin-email', false);
     const msg = friendlyErr(err);
@@ -585,9 +588,7 @@ window.createAccount = async function() {
   try {
     const result = await createUserWithEmailAndPassword(auth, email, pw);
     await updateProfile(result.user, { displayName: name });
-    showMsg('signup', `Account created! Welcome, ${name}. Redirecting…`, 'success');
-    await recordUser(result.user, name);
-    setTimeout(() => redirect(result.user.email), 800);
+    handleAuthSuccess(result.user, 'signup');
   } catch(err) {
     setLoading('btn-signup-email', false);
     const msg = friendlyErr(err);
@@ -609,11 +610,6 @@ window.forgotPassword = async function() {
 };
 
 // ── Google sign-in — popup first on ALL devices ───────────────────────
-// signInWithRedirect has silent failure modes on many mobile browsers
-// (IndexedDB restrictions, SameSite cookie issues, WebView quirks).
-// signInWithPopup works on modern mobile Chrome + Safari and gives
-// instant visible feedback. We only fall back to redirect if the browser
-// explicitly blocks popups (auth/popup-blocked).
 window.signInWithGoogle = async function(panel) {
   if (isInAppBrowser()) {
     document.getElementById('inapp-notice').style.display = 'block';
@@ -627,19 +623,15 @@ window.signInWithGoogle = async function(panel) {
 
   try {
     const result = await signInWithPopup(auth, googleProvider);
-    showMsg(statusPanel, `Welcome, ${result.user.displayName || result.user.email}! Redirecting…`, 'success');
-    await recordUser(result.user);
-    setTimeout(() => redirect(result.user.email), 700);
+    // onAuthStateChanged also fires here — handleAuthSuccess guards double-call
+    handleAuthSuccess(result.user, statusPanel);
   } catch(err) {
     setLoading(btnId, false);
+    clearMsg(statusPanel);
     if (err.code === 'auth/popup-blocked') {
-      // Browser blocked the popup — fall back to redirect
-      showMsg(statusPanel, 'Popup was blocked — redirecting to Google sign-in…', '');
-      try {
-        await signInWithRedirect(auth, googleProvider);
-      } catch(err2) {
-        showMsg(statusPanel, friendlyErr(err2), 'error');
-      }
+      showMsg(statusPanel, 'Popup blocked — redirecting to Google sign-in…', '');
+      try { await signInWithRedirect(auth, googleProvider); }
+      catch(err2) { showMsg(statusPanel, friendlyErr(err2), 'error'); }
     } else {
       const msg = friendlyErr(err);
       if (msg) showMsg(statusPanel, msg, 'error');
