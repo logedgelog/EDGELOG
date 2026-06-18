@@ -98,32 +98,6 @@ tbody td { padding:12px 14px; vertical-align:middle; }
 .actions-cell { display:flex; gap:5px; }
 .btn-action { padding:4px 10px; border-radius:6px; font-family:var(--mono); font-size:9px; letter-spacing:.1em; text-transform:uppercase; cursor:pointer; border:1px solid var(--border); background:var(--bg3); color:var(--text2); transition:all .15s; }
 .btn-block  { color:var(--red);    border-color:rgba(239,83,80,.3); }
-
-/* USER DASHBOARD MODAL */
-#user-dashboard-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.92); z-index:1000; overflow-y:auto; padding:20px; }
-#user-dashboard-modal.active { display:block; }
-.dashboard-container { max-width:1200px; margin:0 auto; background:var(--bg1); border:1px solid var(--border); border-radius:16px; padding:24px; position:relative; }
-.dashboard-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:24px; padding-bottom:16px; border-bottom:1px solid var(--border); }
-.dashboard-user-info { display:flex; align-items:center; gap:12px; }
-.dashboard-close { position:absolute; top:16px; right:16px; background:var(--bg3); border:1px solid var(--border); width:36px; height:36px; border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:18px; color:var(--text2); }
-.dashboard-close:hover { background:var(--bg4); color:var(--text); }
-.dashboard-stats { display:grid; grid-template-columns:repeat(6,1fr); gap:12px; margin-bottom:24px; }
-.dashboard-stat { background:var(--bg2); border:1px solid var(--border); border-radius:10px; padding:14px; }
-.dashboard-stat-label { font-family:var(--mono); font-size:8px; letter-spacing:.15em; text-transform:uppercase; color:var(--text3); margin-bottom:6px; }
-.dashboard-stat-value { font-family:var(--mono); font-size:20px; font-weight:500; line-height:1; }
-.dashboard-stat-value.positive { color:var(--green2); }
-.dashboard-stat-value.negative { color:var(--red); }
-.dashboard-section { margin-bottom:20px; }
-.dashboard-section-title { font-family:var(--mono); font-size:9px; letter-spacing:.15em; text-transform:uppercase; color:var(--text2); margin-bottom:12px; }
-.trades-list { max-height:600px; overflow-y:auto; }
-.trade-row { background:var(--bg2); border:1px solid var(--border); border-radius:8px; padding:12px; margin-bottom:8px; display:grid; grid-template-columns:80px 1fr 80px 80px 100px; gap:12px; align-items:center; font-size:12px; }
-.trade-date { font-family:var(--mono); color:var(--text3); }
-.trade-setup { color:var(--text2); }
-.trade-pnl { font-family:var(--mono); font-weight:500; text-align:right; }
-.trade-pnl.positive { color:var(--green2); }
-.trade-pnl.negative { color:var(--red); }
-.trade-rmul { font-family:var(--mono); text-align:right; color:var(--text3); }
-.trade-grade { font-family:var(--mono); font-size:10px; padding:2px 6px; border-radius:4px; background:var(--bg3); border:1px solid var(--border); text-align:center; }
 .btn-block:hover   { background:rgba(239,83,80,.1); }
 .btn-unblock { color:var(--green2); border-color:rgba(38,166,154,.3); }
 .btn-unblock:hover { background:rgba(38,166,154,.1); }
@@ -172,6 +146,26 @@ tbody td { padding:12px 14px; vertical-align:middle; }
 .h-dot { width:7px; height:7px; border-radius:50%; background:var(--purple); margin-top:4px; flex-shrink:0; }
 .h-text { font-size:12px; color:var(--text2); }
 .h-meta { font-family:var(--mono); font-size:10px; color:var(--text3); margin-top:2px; }
+
+/* JOURNAL MIRROR MODAL (admin view of a user's full trading data) */
+.modal-overlay.lg .modal { max-width:1180px; width:95%; }
+.journal-acc-tabs { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:16px; }
+.journal-acc-tab { padding:7px 14px; border-radius:8px; font-family:var(--mono); font-size:10px; letter-spacing:.08em; text-transform:uppercase; cursor:pointer; border:1px solid var(--border); background:var(--bg3); color:var(--text2); transition:all .15s; }
+.journal-acc-tab.active { background:rgba(124,92,252,.18); border-color:var(--purple); color:var(--purple2); }
+.journal-stats { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-bottom:18px; }
+.journal-stats .stat-card { padding:14px 16px; }
+.journal-stats .stat-value { font-size:22px; }
+.pnl-pos { color:var(--green2); }
+.pnl-neg { color:var(--red); }
+.journal-table-wrap { background:var(--bg2); border:1px solid var(--border); border-radius:12px; overflow:hidden; overflow-x:auto; max-height:48vh; overflow-y:auto; }
+.journal-table-wrap table { width:100%; border-collapse:collapse; min-width:760px; }
+.journal-table-wrap thead { background:var(--bg3); position:sticky; top:0; z-index:2; }
+.journal-table-wrap thead th { font-family:var(--mono); font-size:9px; letter-spacing:.12em; text-transform:uppercase; color:var(--text3); padding:9px 12px; text-align:left; white-space:nowrap; }
+.journal-table-wrap tbody td { padding:9px 12px; font-size:12px; border-bottom:1px solid var(--border); white-space:nowrap; }
+.journal-table-wrap tbody tr:hover { background:var(--bg3); }
+.journal-sync-note { font-family:var(--mono); font-size:10px; color:var(--text3); margin-top:10px; }
+@media (max-width:900px){ .journal-stats{ grid-template-columns:repeat(2,1fr); } }
+
 
 /* EMPTY / LOADING */
 .table-empty { text-align:center; padding:50px 20px; font-family:var(--mono); font-size:11px; color:var(--text3); }
@@ -337,6 +331,17 @@ tbody td { padding:12px 14px; vertical-align:middle; }
       <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
     <div id="modal-body"><div class="table-empty"><div class="loading-spinner"></div></div></div>
+  </div>
+</div>
+
+<!-- JOURNAL MIRROR MODAL — full trading data of a single user -->
+<div class="modal-overlay lg" id="journal-overlay" onclick="closeJournalModal(event)">
+  <div class="modal" id="journal-modal">
+    <div class="modal-header">
+      <div class="modal-title" id="journal-title">Trading Journal</div>
+      <button class="modal-close" onclick="closeJournalModal()">✕</button>
+    </div>
+    <div id="journal-body"><div class="table-empty"><div class="loading-spinner"></div></div></div>
   </div>
 </div>
 
@@ -515,8 +520,8 @@ function renderUsersTable(users) {
       <td><span class="device-tag">${device}</span></td>
       <td><div class="actions-cell">
         ${actions}
-        <button class="btn-action" style="color:var(--blue);border-color:rgba(66,165,245,.3);" onclick="viewUserDashboard('${u.id}','${u.email.replace(/'/g,"\\'")}','${(u.displayName||u.email).replace(/'/g,"\\'")}','${u.photoURL||''}')">Dashboard</button>
         <button class="btn-action btn-detail" onclick="openUserDetail('${u.id}')">Details</button>
+        <button class="btn-action btn-detail" onclick="openUserJournal('${u.id}')" title="View this user's full trading journal">📊 Journal</button>
       </div></td>
     </tr>`;
   }).join('');
@@ -684,6 +689,111 @@ window.closeModal = function(e) {
   }
 };
 
+// ── JOURNAL MIRROR — shows a user's full synced trading data ──
+let _journalData = null;   // raw doc data for the currently-open user
+let _journalAccId = null;  // currently selected account id within that user's data
+
+window.openUserJournal = async function(uid) {
+  const ov = document.getElementById('journal-overlay');
+  ov.classList.add('open');
+  const u = allUsers.find(x => x.id === uid);
+  document.getElementById('journal-title').textContent =
+    'Trading Journal — ' + (u?.displayName || u?.email || uid);
+  const body = document.getElementById('journal-body');
+  body.innerHTML = '<div class="table-empty"><div class="loading-spinner"></div></div>';
+
+  try {
+    const snap = await getDoc(doc(db, 'users', uid, 'appData', 'state'));
+    if (!snap.exists()) {
+      body.innerHTML = `<div class="table-empty">No journal data synced yet for this user.<br><span style="font-size:10px">Data appears here automatically after they open EdgeLog with the current version and log at least one trade.</span></div>`;
+      _journalData = null;
+      return;
+    }
+    _journalData = snap.data();
+    const accs = _journalData.accounts || {};
+    const ids = Object.keys(accs);
+    if (!ids.length) {
+      body.innerHTML = '<div class="table-empty">This user has no accounts/trades yet.</div>';
+      return;
+    }
+    _journalAccId = (_journalData.activeAccountId && accs[_journalData.activeAccountId]) ? _journalData.activeAccountId : ids[0];
+    renderJournalBody();
+  } catch (e) {
+    body.innerHTML = `<div class="table-empty">Error loading journal: ${e.message}</div>`;
+  }
+};
+
+window.closeJournalModal = function(e) {
+  if (!e || e.target === document.getElementById('journal-overlay')) {
+    document.getElementById('journal-overlay').classList.remove('open');
+  }
+};
+
+window.switchJournalAccount = function(accId) {
+  _journalAccId = accId;
+  renderJournalBody();
+};
+
+function renderJournalBody() {
+  const body = document.getElementById('journal-body');
+  if (!_journalData) return;
+  const accs = _journalData.accounts || {};
+  const ids = Object.keys(accs);
+  const acc = accs[_journalAccId] || {};
+  const trades = Array.isArray(acc.trades) ? acc.trades.slice() : [];
+  trades.sort((a, b) => new Date(b.date || b.entryTime || 0) - new Date(a.date || a.entryTime || 0));
+
+  const wins = trades.filter(t => Number(t.pnl) > 0).length;
+  const losses = trades.filter(t => Number(t.pnl) < 0).length;
+  const decided = wins + losses;
+  const winRate = decided ? ((wins / decided) * 100).toFixed(1) + '%' : '—';
+  const totalPnl = trades.reduce((s, t) => s + (Number(t.pnl) || 0), 0);
+
+  const tabs = ids.map(id => `
+    <div class="journal-acc-tab ${id === _journalAccId ? 'active' : ''}" onclick="switchJournalAccount('${id}')">
+      ${escJournal(accs[id].name || 'Account')} <span style="opacity:.6">(${(accs[id].trades || []).length})</span>
+    </div>`).join('');
+
+  const rows = trades.slice(0, 300).map(t => {
+    const pnl = Number(t.pnl) || 0;
+    const confl = Array.isArray(t.confluences) ? t.confluences.join(', ') : (t.confluences || t.setup || '—');
+    return `<tr>
+      <td class="date-sm">${t.date || t.entryTime || '—'}</td>
+      <td class="mono-sm">${t.instrument || '—'}</td>
+      <td class="mono-sm">${t.direction || '—'}</td>
+      <td class="mono-sm ${pnl > 0 ? 'pnl-pos' : (pnl < 0 ? 'pnl-neg' : '')}">${pnl ? (pnl > 0 ? '+' : '') + pnl.toFixed(2) : '—'}</td>
+      <td class="mono-sm">${t.rMultiple != null ? t.rMultiple : '—'}</td>
+      <td class="mono-sm">${t.grade || '—'}</td>
+      <td class="mono-sm">${t.session || '—'}</td>
+      <td class="mono-sm" style="max-width:220px;overflow:hidden;text-overflow:ellipsis">${escJournal(String(confl))}</td>
+    </tr>`;
+  }).join('');
+
+  const syncedAt = _journalData.updatedAt ? formatDate(_journalData.updatedAt) : '—';
+
+  body.innerHTML = `
+    <div class="journal-acc-tabs">${tabs}</div>
+    <div class="journal-stats">
+      <div class="stat-card"><div class="stat-label">Balance</div><div class="stat-value purple">$${Number(acc.balance || 0).toLocaleString()}</div></div>
+      <div class="stat-card"><div class="stat-label">Total Trades</div><div class="stat-value blue">${trades.length}</div></div>
+      <div class="stat-card"><div class="stat-label">Win Rate</div><div class="stat-value green">${winRate}</div></div>
+      <div class="stat-card"><div class="stat-label">Total P&L</div><div class="stat-value ${totalPnl >= 0 ? 'green' : 'red'}">${totalPnl >= 0 ? '+' : ''}$${totalPnl.toFixed(0)}</div></div>
+      <div class="stat-card"><div class="stat-label">Risk / Trade</div><div class="stat-value gold">$${_journalData.accountRisk || '—'}</div></div>
+    </div>
+    <div class="journal-table-wrap">
+      <table>
+        <thead><tr><th>Date</th><th>Instrument</th><th>Dir</th><th>P&L</th><th>R</th><th>Grade</th><th>Session</th><th>Setup / Confluences</th></tr></thead>
+        <tbody>${rows || '<tr><td colspan="8"><div class="table-empty">No trades logged yet on this account</div></td></tr>'}</tbody>
+      </table>
+    </div>
+    <div class="journal-sync-note">Last synced: ${syncedAt}${trades.length > 300 ? ' · showing 300 most recent trades' : ''}</div>
+  `;
+}
+function escJournal(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
 // ── BLOCK / UNBLOCK ──
 window.setStatus = async function(uid, status) {
   try {
@@ -741,131 +851,6 @@ function showToast(msg, type='') {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => { t.className = 'toast'; }, 3000);
 }
-
-// ── ADMIN DASHBOARD VIEWER ──
-let selectedUserForDashboard = null;
-
-async function viewUserDashboard(uid, email, displayName, photoURL) {
-  selectedUserForDashboard = { uid, email, displayName, photoURL };
-  const modal = document.getElementById('user-dashboard-modal');
-  modal.classList.add('active');
-  
-  // Set user info
-  const userInfoEl = document.getElementById('dashboard-user-info');
-  userInfoEl.innerHTML = `
-    <div>${photoURL ? '<img src="'+photoURL+'" style="width:40px;height:40px;border-radius:50%;object-fit:cover;">' : '<div style="width:40px;height:40px;border-radius:50%;background:var(--purple);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;">'+displayName.charAt(0)+'</div>'}</div>
-    <div>
-      <div style="font-size:14px;font-weight:500;">${displayName}</div>
-      <div style="font-family:var(--mono);font-size:11px;color:var(--text3);">${email}</div>
-    </div>
-  `;
-  
-  // Load user's trades and calculate stats
-  try {
-    const userRef = doc(db, 'users', uid);
-    const userSnap = await getDoc(userRef);
-    
-    if (!userSnap.exists()) {
-      document.getElementById('dashboard-stats-grid').innerHTML = '<div style="grid-column:1/-1;color:var(--red);">User not found</div>';
-      return;
-    }
-    
-    const userData = userSnap.data();
-    const trades = userData.trades || [];
-    
-    // Calculate stats
-    const winningTrades = trades.filter(t => (t.pnl || 0) > 0);
-    const losingTrades = trades.filter(t => (t.pnl || 0) < 0);
-    const totalPnL = trades.reduce((s, t) => s + (t.pnl || 0), 0);
-    const winRate = trades.length > 0 ? Math.round((winningTrades.length / trades.length) * 100) : 0;
-    const avgWin = winningTrades.length > 0 ? Math.round(winningTrades.reduce((s, t) => s + (t.pnl || 0), 0) / winningTrades.length) : 0;
-    const avgLoss = losingTrades.length > 0 ? Math.round(losingTrades.reduce((s, t) => s + (t.pnl || 0), 0) / losingTrades.length) : 0;
-    
-    // Render stats
-    const statsGrid = document.getElementById('dashboard-stats-grid');
-    statsGrid.innerHTML = `
-      <div class="dashboard-stat">
-        <div class="dashboard-stat-label">Total Trades</div>
-        <div class="dashboard-stat-value">${trades.length}</div>
-      </div>
-      <div class="dashboard-stat">
-        <div class="dashboard-stat-label">Total P&L</div>
-        <div class="dashboard-stat-value ${totalPnL >= 0 ? 'positive' : 'negative'}">$${totalPnL.toLocaleString()}</div>
-      </div>
-      <div class="dashboard-stat">
-        <div class="dashboard-stat-label">Win Rate</div>
-        <div class="dashboard-stat-value">${winRate}%</div>
-      </div>
-      <div class="dashboard-stat">
-        <div class="dashboard-stat-label">Winning Trades</div>
-        <div class="dashboard-stat-value positive">${winningTrades.length}</div>
-      </div>
-      <div class="dashboard-stat">
-        <div class="dashboard-stat-label">Avg Win</div>
-        <div class="dashboard-stat-value positive">$${avgWin}</div>
-      </div>
-      <div class="dashboard-stat">
-        <div class="dashboard-stat-label">Avg Loss</div>
-        <div class="dashboard-stat-value negative">$${avgLoss}</div>
-      </div>
-    `;
-    
-    // Render recent trades (last 20)
-    const tradesContainer = document.getElementById('trades-list-container');
-    if (trades.length === 0) {
-      tradesContainer.innerHTML = '<div style="color:var(--text3);padding:14px;text-align:center;">No trades recorded</div>';
-    } else {
-      const recentTrades = trades.slice(-20).reverse();
-      tradesContainer.innerHTML = recentTrades.map(t => {
-        const d = new Date(t.date || Date.now());
-        const dateStr = (d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear();
-        const pnl = t.pnl || 0;
-        const rMul = t.rMultiple || t.rmultiple || 0;
-        return `
-          <div class="trade-row">
-            <div class="trade-date">${dateStr}</div>
-            <div class="trade-setup">${t.setup || '—'}</div>
-            <div class="trade-pnl ${pnl >= 0 ? 'positive' : 'negative'}">$${pnl}</div>
-            <div class="trade-rmul">${rMul.toFixed(2)}R</div>
-            <div class="trade-grade">${t.confluenceGrade || t.grade || '—'}</div>
-          </div>
-        `;
-      }).join('');
-    }
-  } catch (err) {
-    console.error('Error loading user dashboard:', err);
-    document.getElementById('dashboard-stats-grid').innerHTML = '<div style="grid-column:1/-1;color:var(--red);">Error loading data</div>';
-  }
-}
-
-function closeUserDashboard() {
-  const modal = document.getElementById('user-dashboard-modal');
-  modal.classList.remove('active');
-  selectedUserForDashboard = null;
-}
-
-// Close modal on outside click
-document.addEventListener('click', e => {
-  const modal = document.getElementById('user-dashboard-modal');
-  if (e.target === modal) closeUserDashboard();
-});
-
-</script><!-- USER DASHBOARD MODAL -->
-<div id="user-dashboard-modal">
-  <div class="dashboard-container">
-    <div class="dashboard-header">
-      <div class="dashboard-user-info" id="dashboard-user-info"></div>
-      <button class="dashboard-close" onclick="closeUserDashboard()">×</button>
-    </div>
-    
-    <div class="dashboard-stats" id="dashboard-stats-grid"></div>
-    
-    <div class="dashboard-section">
-      <div class="dashboard-section-title">Recent Trades</div>
-      <div class="trades-list" id="trades-list-container"></div>
-    </div>
-  </div>
-</div>
-
+</script>
 </body>
 </html>
