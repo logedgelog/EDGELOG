@@ -7,16 +7,17 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=IBM+Plex+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
 :root {
   --bg:     #09090e;
   --bg1:    #0f0f18;
   --bg2:    #141420;
   --bg3:    #1c1c2a;
   --border: rgba(255,255,255,0.09);
+  --border2:rgba(255,255,255,0.14);
   --purple: #7c5cfc;
   --purple2:#a488ff;
   --green:  #26a69a;
+  --red:    #ef5350;
   --text:   #f0f0f8;
   --text2:  #b0b0c8;
   --text3:  #8484a0;
@@ -24,7 +25,6 @@
   --ui:     'DM Sans', sans-serif;
   --display:'Cormorant Garamond', serif;
 }
-
 body {
   background: var(--bg);
   color: var(--text);
@@ -33,37 +33,29 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
+  overflow-x: hidden;
   position: relative;
+  padding: 20px;
 }
-
-/* Ambient background glow */
 body::before {
   content: '';
   position: fixed;
-  top: -30%;
-  left: 50%;
+  top: -30%; left: 50%;
   transform: translateX(-50%);
-  width: 800px;
-  height: 600px;
+  width: 800px; height: 600px;
   background: radial-gradient(ellipse, rgba(124,92,252,0.12) 0%, transparent 70%);
   pointer-events: none;
 }
 body::after {
   content: '';
   position: fixed;
-  bottom: -20%;
-  left: 20%;
-  width: 500px;
-  height: 400px;
+  bottom: -20%; left: 20%;
+  width: 500px; height: 400px;
   background: radial-gradient(ellipse, rgba(38,166,154,0.07) 0%, transparent 70%);
   pointer-events: none;
 }
-
-/* Grid overlay */
 .grid-overlay {
-  position: fixed;
-  inset: 0;
+  position: fixed; inset: 0;
   background-image:
     linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
@@ -71,160 +63,226 @@ body::after {
   pointer-events: none;
 }
 
+/* ── Card ── */
 .login-card {
-  position: relative;
-  z-index: 10;
+  position: relative; z-index: 10;
   background: var(--bg1);
   border: 1px solid var(--border);
   border-radius: 20px;
-  padding: 52px 48px 44px;
-  width: 100%;
-  max-width: 420px;
-  box-shadow:
-    0 0 0 1px rgba(124,92,252,0.08),
-    0 40px 80px rgba(0,0,0,0.6),
-    0 0 60px rgba(124,92,252,0.06);
+  padding: 44px 44px 40px;
+  width: 100%; max-width: 420px;
+  box-shadow: 0 0 0 1px rgba(124,92,252,0.08), 0 40px 80px rgba(0,0,0,0.6), 0 0 60px rgba(124,92,252,0.06);
   text-align: center;
 }
 
+/* ── Logo ── */
 .logo-wrap {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  margin-bottom: 28px;
+  display: flex; align-items: center; justify-content: center;
+  gap: 14px; margin-bottom: 6px;
 }
-.logo-wrap img {
-  width: 44px;
-  height: 44px;
-  border-radius: 10px;
-  object-fit: contain;
+.logo-icon {
+  width: 48px; height: 48px; flex-shrink: 0;
 }
 .logo-text {
   font-family: var(--display);
-  font-size: 32px;
-  font-weight: 400;
-  font-style: italic;
-  color: var(--text);
+  font-size: 34px; font-weight: 400; font-style: italic;
+  color: var(--text); letter-spacing: 0.5px;
 }
 .logo-text span { color: var(--purple2); }
-
 .tagline {
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--text3);
-  margin-bottom: 36px;
+  font-family: var(--mono); font-size: 10px;
+  letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--text3); margin-bottom: 28px;
 }
 
-.divider {
-  height: 1px;
-  background: var(--border);
-  margin: 0 0 36px;
+/* ── Auth tabs ── */
+.auth-tabs {
+  display: flex; background: var(--bg3);
+  border-radius: 10px; padding: 4px;
+  margin-bottom: 24px; gap: 4px;
+}
+.auth-tab {
+  flex: 1; padding: 9px;
+  border: none; border-radius: 7px;
+  font-family: var(--ui); font-size: 13px; font-weight: 500;
+  cursor: pointer; transition: all 0.2s;
+  background: transparent; color: var(--text3);
+}
+.auth-tab.active {
+  background: var(--bg1);
+  color: var(--text);
+  box-shadow: 0 1px 6px rgba(0,0,0,0.4);
 }
 
-.sign-in-label {
-  font-size: 13px;
-  color: var(--text2);
-  margin-bottom: 20px;
-  font-family: var(--ui);
+/* ── Panels ── */
+.auth-panel { display: none; }
+.auth-panel.active { display: block; }
+
+/* ── Form fields ── */
+.field-wrap { margin-bottom: 14px; text-align: left; }
+.field-wrap label {
+  display: block; font-family: var(--mono);
+  font-size: 9.5px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--text3);
+  margin-bottom: 6px;
 }
+.field-wrap input {
+  width: 100%;
+  padding: 13px 14px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  color: var(--text);
+  font-family: var(--ui); font-size: 14px;
+  outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+}
+.field-wrap input:focus {
+  border-color: rgba(124,92,252,0.5);
+  box-shadow: 0 0 0 3px rgba(124,92,252,0.1);
+}
+.field-wrap input::placeholder { color: var(--text3); }
+
+/* ── Buttons ── */
+.btn-primary {
+  display: flex; align-items: center; justify-content: center;
+  gap: 10px; width: 100%;
+  padding: 14px 24px;
+  background: linear-gradient(135deg, #7c5cfc, #a488ff);
+  color: #fff; border: none; border-radius: 10px;
+  font-family: var(--ui); font-size: 15px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s;
+  box-shadow: 0 4px 20px rgba(124,92,252,0.35);
+  letter-spacing: 0.3px;
+}
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 28px rgba(124,92,252,0.5); }
+.btn-primary:active { transform: translateY(0); }
+.btn-primary.loading { opacity: 0.7; cursor: not-allowed; pointer-events: none; }
 
 .btn-google {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  width: 100%;
-  padding: 14px 24px;
-  background: #fff;
-  color: #1f1f1f;
-  border: none;
-  border-radius: 10px;
-  font-family: var(--ui);
-  font-size: 15px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+  display: flex; align-items: center; justify-content: center;
+  gap: 12px; width: 100%;
+  padding: 13px 24px;
+  background: #fff; color: #1f1f1f;
+  border: none; border-radius: 10px;
+  font-family: var(--ui); font-size: 14px; font-weight: 500;
+  cursor: pointer; transition: all 0.2s;
   box-shadow: 0 2px 12px rgba(0,0,0,0.3);
 }
-.btn-google:hover {
-  background: #f5f5f5;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-}
+.btn-google:hover { background: #f5f5f5; transform: translateY(-1px); box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
 .btn-google:active { transform: translateY(0); }
+.btn-google.loading { opacity: 0.7; cursor: not-allowed; pointer-events: none; }
 .btn-google svg { flex-shrink: 0; }
 
-.btn-google.loading {
-  opacity: 0.7;
-  cursor: not-allowed;
-  pointer-events: none;
+/* Or divider */
+.or-divider {
+  display: flex; align-items: center; gap: 12px;
+  margin: 18px 0;
+}
+.or-divider::before, .or-divider::after {
+  content: ''; flex: 1; height: 1px;
+  background: var(--border);
+}
+.or-divider span {
+  font-family: var(--mono); font-size: 10px;
+  color: var(--text3); letter-spacing: 0.1em;
+  text-transform: uppercase; white-space: nowrap;
 }
 
+/* Forgot password link */
+.forgot-link {
+  display: block; text-align: right;
+  font-family: var(--mono); font-size: 10px;
+  color: var(--text3); text-decoration: none;
+  margin-top: 6px; margin-bottom: 16px;
+  cursor: pointer; transition: color 0.2s;
+}
+.forgot-link:hover { color: var(--purple2); }
+
+/* Password strength */
+.pw-strength { margin-top: 7px; display: none; }
+.pw-strength-bar {
+  height: 3px; border-radius: 3px;
+  background: var(--bg3); overflow: hidden; margin-bottom: 4px;
+}
+.pw-strength-fill {
+  height: 100%; border-radius: 3px;
+  transition: width 0.3s, background 0.3s;
+  width: 0%;
+}
+.pw-strength-label {
+  font-family: var(--mono); font-size: 9.5px;
+  color: var(--text3); text-align: left;
+}
+
+/* Status messages */
 .status-msg {
-  margin-top: 20px;
-  font-family: var(--mono);
-  font-size: 11px;
-  min-height: 20px;
-  color: var(--text3);
-  transition: color 0.2s;
+  margin-top: 14px; padding: 0 2px;
+  font-family: var(--mono); font-size: 11px;
+  line-height: 1.5; min-height: 18px; color: var(--text3);
+  transition: color 0.2s; text-align: left;
 }
-.status-msg.error { color: #ef5350; }
+.status-msg.error { color: var(--red); }
 .status-msg.success { color: var(--green); }
-
-.back-link {
-  display: block;
-  margin-top: 28px;
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text3);
-  text-decoration: none;
-  transition: color 0.2s;
-}
-.back-link:hover { color: var(--text2); }
-
-.secure-note {
-  margin-top: 32px;
-  padding-top: 20px;
-  border-top: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 0.1em;
-  color: var(--text3);
-  text-transform: uppercase;
-}
-.secure-dot {
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: var(--green);
-  box-shadow: 0 0 6px rgba(38,166,154,0.6);
-  flex-shrink: 0;
-}
 
 /* Spinner */
 .spinner {
   width: 18px; height: 18px;
-  border: 2px solid rgba(0,0,0,0.2);
-  border-top-color: var(--purple);
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-  display: none;
+  border: 2px solid rgba(255,255,255,0.25);
+  border-top-color: #fff; border-radius: 50%;
+  animation: spin 0.7s linear infinite; display: none; flex-shrink: 0;
 }
+.btn-primary.loading .spinner,
 .btn-google.loading .spinner { display: block; }
 .btn-google.loading .google-icon { display: none; }
-
+.btn-primary.loading .btn-label { opacity: 0.7; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* In-app browser notice */
+.inapp-notice {
+  display: none; text-align: left;
+  background: rgba(240,192,64,.08);
+  border: 1px solid rgba(240,192,64,.25);
+  border-radius: 12px; padding: 16px; margin-bottom: 4px;
+}
+.inapp-notice h4 {
+  font-family: var(--ui); font-size: 13px;
+  color: var(--text); font-weight: 500; margin-bottom: 8px;
+}
+.inapp-notice p {
+  font-family: var(--ui); font-size: 12px;
+  color: var(--text2); line-height: 1.5; margin-bottom: 12px;
+}
+.btn-copy-link {
+  width: 100%; padding: 11px; border-radius: 9px;
+  background: rgba(240,192,64,.15); border: 1px solid rgba(240,192,64,.4);
+  color: #f0c040; font-family: var(--ui); font-size: 13px;
+  font-weight: 500; cursor: pointer;
+}
+
+/* Footer */
+.secure-note {
+  margin-top: 28px; padding-top: 18px;
+  border-top: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  gap: 6px; font-family: var(--mono);
+  font-size: 9px; letter-spacing: 0.1em;
+  color: var(--text3); text-transform: uppercase;
+}
+.secure-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 6px rgba(38,166,154,0.6); flex-shrink: 0;
+}
+.back-link {
+  display: block; margin-top: 16px;
+  font-family: var(--mono); font-size: 10px;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--text3); text-decoration: none; transition: color 0.2s;
+}
+.back-link:hover { color: var(--text2); }
+
 @media (max-width: 480px) {
-  .login-card { padding: 40px 28px 36px; margin: 16px; }
+  .login-card { padding: 36px 24px 32px; }
 }
 </style>
 </head>
@@ -232,274 +290,383 @@ body::after {
 <div class="grid-overlay"></div>
 
 <div class="login-card">
+
+  <!-- Logo -->
   <div class="logo-wrap">
-    <img id="logo-img" src="" alt="EdgeLog">
+    <img src="data:image/png;base64,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" alt="EdgeLog" class="logo-icon" style="width:52px;height:52px;border-radius:14px;">
     <div class="logo-text">Edge<span>Log</span></div>
   </div>
   <div class="tagline">Logging Into Success</div>
-  <div class="divider"></div>
-  <div class="sign-in-label" id="sign-in-label">Sign in to access your trading journal</div>
 
-  <button class="btn-google" id="btn-google" onclick="signInWithGoogle()">
-    <svg class="google-icon" width="20" height="20" viewBox="0 0 48 48">
-      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-      <path fill="none" d="M0 0h48v48H0z"/>
-    </svg>
-    <div class="spinner"></div>
-    Continue with Google
-  </button>
-
-  <!-- Shown instead of the button when we detect an in-app browser (Instagram/
-       Facebook/TikTok/etc.) — Google blocks OAuth sign-in inside these WebViews,
-       so we guide the person to open the page in Safari/Chrome instead. -->
-  <div id="inapp-notice" style="display:none;text-align:left;background:rgba(240,192,64,.08);border:1px solid rgba(240,192,64,.25);border-radius:12px;padding:16px 16px 14px;margin-bottom:4px;">
-    <div style="font-family:var(--ui);font-size:13px;color:var(--text);font-weight:500;margin-bottom:8px;">⚠️ Can't sign in from this app</div>
-    <div style="font-family:var(--ui);font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:12px;">
-      Google blocks sign-in inside Instagram/Facebook/TikTok's built-in browser. Open this page in Safari or Chrome instead — most apps have an <strong>"Open in Browser"</strong> option in the ⋯ or share menu.
-    </div>
-    <button onclick="copyLoginLink()" id="copy-link-btn" style="width:100%;padding:11px;border-radius:9px;background:rgba(240,192,64,.15);border:1px solid rgba(240,192,64,.4);color:#f0c040;font-family:var(--ui);font-size:13px;font-weight:500;cursor:pointer;">📋 Copy link to open in browser</button>
+  <!-- Tab switcher -->
+  <div class="auth-tabs">
+    <button class="auth-tab active" id="tab-signin" onclick="switchTab('signin')">Sign In</button>
+    <button class="auth-tab" id="tab-signup" onclick="switchTab('signup')">Create Account</button>
   </div>
 
-  <div class="status-msg" id="status-msg"></div>
-  <button id="retry-btn" onclick="signInWithGoogle()" style="display:none;width:100%;padding:11px;margin-top:6px;border-radius:9px;background:rgba(124,92,252,.12);border:1px solid rgba(124,92,252,.35);color:var(--purple2);font-family:var(--ui);font-size:13px;font-weight:500;cursor:pointer;">Try again</button>
-  <a href="index.html" class="back-link">← Back to home</a>
+  <!-- ── SIGN IN PANEL ── -->
+  <div class="auth-panel active" id="panel-signin">
+    <div class="field-wrap">
+      <label>Email</label>
+      <input type="email" id="si-email" placeholder="trader@example.com" autocomplete="email">
+    </div>
+    <div class="field-wrap">
+      <label>Password</label>
+      <input type="password" id="si-password" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <span class="forgot-link" onclick="forgotPassword()">Forgot password?</span>
+    <button class="btn-primary" id="btn-signin-email" onclick="signInEmail()">
+      <div class="spinner"></div>
+      <span class="btn-label">Sign In</span>
+    </button>
+    <div class="or-divider"><span>or</span></div>
+    <button class="btn-google" id="btn-google-si" onclick="signInWithGoogle('si')">
+      <svg class="google-icon" width="20" height="20" viewBox="0 0 48 48">
+        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+        <path fill="none" d="M0 0h48v48H0z"/>
+      </svg>
+      <div class="spinner"></div>
+      Continue with Google
+    </button>
+    <div class="inapp-notice" id="inapp-notice">
+      <h4>⚠️ Can't sign in from this app</h4>
+      <p>Google blocks sign-in inside Instagram/Facebook/TikTok's built-in browser. Open this page in Safari or Chrome — most apps have an <strong>"Open in Browser"</strong> option in the ⋯ or share menu.</p>
+      <button class="btn-copy-link" id="copy-link-btn" onclick="copyLoginLink()">📋 Copy link to open in browser</button>
+    </div>
+    <div class="status-msg" id="status-signin"></div>
+    <button id="retry-btn" onclick="signInWithGoogle('si')" style="display:none;width:100%;padding:11px;margin-top:6px;border-radius:9px;background:rgba(124,92,252,.12);border:1px solid rgba(124,92,252,.35);color:var(--purple2);font-family:var(--ui);font-size:13px;font-weight:500;cursor:pointer;">Try again</button>
+  </div>
 
+  <!-- ── CREATE ACCOUNT PANEL ── -->
+  <div class="auth-panel" id="panel-signup">
+    <div class="field-wrap">
+      <label>Display Name</label>
+      <input type="text" id="su-name" placeholder="e.g. Akshay" autocomplete="name">
+    </div>
+    <div class="field-wrap">
+      <label>Email</label>
+      <input type="email" id="su-email" placeholder="trader@example.com" autocomplete="email">
+    </div>
+    <div class="field-wrap">
+      <label>Password</label>
+      <input type="password" id="su-password" placeholder="Min 8 characters" autocomplete="new-password" oninput="checkPasswordStrength(this.value)">
+      <div class="pw-strength" id="pw-strength">
+        <div class="pw-strength-bar"><div class="pw-strength-fill" id="pw-fill"></div></div>
+        <div class="pw-strength-label" id="pw-label"></div>
+      </div>
+    </div>
+    <div class="field-wrap">
+      <label>Confirm Password</label>
+      <input type="password" id="su-password2" placeholder="••••••••" autocomplete="new-password">
+    </div>
+    <button class="btn-primary" id="btn-signup-email" onclick="createAccount()" style="margin-top:4px;">
+      <div class="spinner"></div>
+      <span class="btn-label">Create Account</span>
+    </button>
+    <div class="or-divider"><span>or</span></div>
+    <button class="btn-google" id="btn-google-su" onclick="signInWithGoogle('su')">
+      <svg class="google-icon" width="20" height="20" viewBox="0 0 48 48">
+        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+        <path fill="none" d="M0 0h48v48H0z"/>
+      </svg>
+      <div class="spinner"></div>
+      Sign up with Google
+    </button>
+    <div class="status-msg" id="status-signup"></div>
+  </div>
+
+  <a href="index.html" class="back-link">← Back to home</a>
   <div class="secure-note">
     <div class="secure-dot"></div>
     Secured by Firebase Auth · No passwords stored
   </div>
 </div>
 
-<!-- Firebase SDKs -->
+<script>
+// ── Load watchdog ───────────────────────────────────────────────────────
+window.__edgeSignInReady = false;
+window.addEventListener('error', function(e){ console.error('Page error:', e.message || e); }, true);
+setTimeout(function(){
+  if (window.__edgeSignInReady) return;
+  var msg = document.getElementById('status-signin');
+  if (msg) {
+    msg.textContent = 'Sign-in is taking too long to load. Try switching between WiFi and mobile data, or reload the page.';
+    msg.className = 'status-msg error';
+  }
+  var retry = document.getElementById('retry-btn');
+  if (retry){ retry.textContent = 'Reload page'; retry.onclick = function(){ location.reload(); }; retry.style.display = 'block'; }
+}, 8000);
+
+// ── UI helpers (run before module loads) ────────────────────────────────
+window.switchTab = function(tab) {
+  document.getElementById('panel-signin').classList.toggle('active', tab==='signin');
+  document.getElementById('panel-signup').classList.toggle('active', tab==='signup');
+  document.getElementById('tab-signin').classList.toggle('active', tab==='signin');
+  document.getElementById('tab-signup').classList.toggle('active', tab==='signup');
+};
+
+window.checkPasswordStrength = function(val) {
+  var el = document.getElementById('pw-strength');
+  var fill = document.getElementById('pw-fill');
+  var label = document.getElementById('pw-label');
+  el.style.display = val.length ? 'block' : 'none';
+  var score = 0;
+  if (val.length >= 8) score++;
+  if (/[A-Z]/.test(val)) score++;
+  if (/[0-9]/.test(val)) score++;
+  if (/[^A-Za-z0-9]/.test(val)) score++;
+  var colors = ['#ef5350','#ffa726','#26a69a','#2ecf7c'];
+  var labels = ['Weak','Fair','Good','Strong'];
+  fill.style.width = ((score/4)*100)+'%';
+  fill.style.background = colors[score-1] || '#ef5350';
+  label.textContent = labels[score-1] || '';
+  label.style.color = colors[score-1] || '#ef5350';
+};
+
+window.copyLoginLink = function() {
+  var url = window.location.href;
+  var btn = document.getElementById('copy-link-btn');
+  navigator.clipboard.writeText(url).then(function(){
+    btn.textContent = '✓ Link copied — paste it in Safari/Chrome';
+    setTimeout(function(){ btn.textContent = '📋 Copy link to open in browser'; }, 3000);
+  }).catch(function(){ btn.textContent = url; });
+};
+</script>
+
 <script src="firebase-config.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth, signInWithPopup, signInWithRedirect, getRedirectResult, GoogleAuthProvider,
-          onAuthStateChanged, setPersistence, browserLocalPersistence }
+import { getAuth, signInWithPopup, signInWithRedirect, getRedirectResult,
+         createUserWithEmailAndPassword, signInWithEmailAndPassword,
+         sendPasswordResetEmail, updateProfile,
+         GoogleAuthProvider, onAuthStateChanged,
+         setPersistence, browserLocalPersistence }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc, collection, addDoc, serverTimestamp }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
+window.__edgeSignInReady = true;
+
 const app  = initializeApp(FIREBASE_CONFIG);
 const auth = getAuth(app);
 const db   = getFirestore(app);
-const provider = new GoogleAuthProvider();
+const googleProvider = new GoogleAuthProvider();
 
-// Use explicit local persistence. In some mobile contexts (private browsing,
-// storage-partitioned WebViews) the default persistence can silently fail to
-// initialize, which breaks the redirect sign-in flow with no visible error.
-setPersistence(auth, browserLocalPersistence).catch((e) => {
-  console.warn('Persistence setup failed, continuing with default:', e);
-});
-
-// Restore logo from landing page (stored in sessionStorage) or hide
-const logoImg = document.getElementById('logo-img');
-const storedLogo = sessionStorage.getItem('el_logo');
-if (storedLogo) { logoImg.src = storedLogo; }
-else { logoImg.style.display = 'none'; }
+setPersistence(auth, browserLocalPersistence).catch(e => console.warn('Persistence failed:', e));
 
 // ── In-app browser detection ──────────────────────────────────────────
-// Google disallows OAuth sign-in inside embedded WebViews used by apps like
-// Instagram, Facebook, TikTok, etc. (error: "disallowed_useragent"). Since
-// this is exactly how people following an Instagram bio link would land
-// here, detect it up front and show clear guidance instead of a dead button.
 function isInAppBrowser() {
   const ua = navigator.userAgent || '';
-  if (/FBAN|FBAV|FB_IAB|FBSV|Instagram|Line\/|MicroMessenger|TikTok|Snapchat|Pinterest|LinkedInApp/i.test(ua)) return true;
-  // Generic Android WebView marker (e.g. "...Version/4.0 Chrome/... Mobile Safari/... ; wv)")
+  if (/FBAN|FBAV|FB_IAB|FBSV|Instagram|Line\/|MicroMessenger|TikTok|Snapchat|Pinterest|LinkedInApp|KakaoTalk|Naver/i.test(ua)) return true;
   if (/Android/i.test(ua) && /; ?wv\)/i.test(ua)) return true;
   return false;
 }
-
-function showInAppNotice() {
-  document.getElementById('btn-google').style.display = 'none';
-  document.getElementById('sign-in-label').style.display = 'none';
+if (isInAppBrowser()) {
+  document.getElementById('btn-google-si').style.display = 'none';
+  document.getElementById('btn-google-su').style.display = 'none';
   document.getElementById('inapp-notice').style.display = 'block';
 }
 
-window.copyLoginLink = function() {
-  const url = window.location.href;
-  const btn = document.getElementById('copy-link-btn');
-  navigator.clipboard.writeText(url).then(() => {
-    btn.textContent = '✓ Link copied — paste it in Safari/Chrome';
-    setTimeout(() => { btn.textContent = '📋 Copy link to open in browser'; }, 3000);
-  }).catch(() => {
-    btn.textContent = url;
-  });
+// ── Error handling ────────────────────────────────────────────────────
+const ERROR_MAP = {
+  'auth/user-not-found':          'No account found with this email.',
+  'auth/wrong-password':          'Incorrect password. Try again or reset it.',
+  'auth/invalid-credential':      'Incorrect email or password.',
+  'auth/email-already-in-use':    'An account with this email already exists. Try signing in.',
+  'auth/weak-password':           'Password must be at least 6 characters.',
+  'auth/invalid-email':           'Please enter a valid email address.',
+  'auth/too-many-requests':       'Too many attempts. Try again in a few minutes.',
+  'auth/network-request-failed':  'Network error. Check your connection and try again.',
+  'auth/unauthorized-domain':     "This domain isn't authorized for sign-in. Contact support.",
+  'auth/popup-blocked':           'Popup blocked by browser. The redirect method will be tried instead.',
+  'auth/cancelled-popup-request': '',
+  'auth/popup-closed-by-user':    '',
+  'auth/web-storage-unsupported': 'Browser storage is blocked (private mode?). Try a normal browser tab.',
+  'permission-denied':            'Access denied. Please contact support.',
 };
 
-if (isInAppBrowser()) showInAppNotice();
+function showMsg(panel, text, type) {
+  // panel = 'signin' | 'signup'
+  const el = document.getElementById('status-' + panel);
+  if (!el) return;
+  el.textContent = text;
+  el.className = 'status-msg' + (type ? ' ' + type : '');
+}
+function clearMsg(panel) { showMsg(panel, '', ''); }
 
-// ── Visible error/status helpers (replaces silent console-only failures) ──
-function friendlyError(err) {
+function friendlyErr(err) {
   const code = err && err.code ? err.code : '';
-  const map = {
-    'auth/unauthorized-domain': "This domain isn't authorized for sign-in yet. Please contact support.",
-    'auth/network-request-failed': 'Network error. Check your connection and try again.',
-    'auth/popup-blocked': 'Your browser blocked the sign-in popup. Trying an alternate method may help.',
-    'auth/cancelled-popup-request': '',
-    'auth/popup-closed-by-user': '',
-    'auth/web-storage-unsupported': 'Your browser is blocking storage needed to sign in (private browsing?). Try a normal browser tab.',
-    'permission-denied': 'Signed in, but saving your session was blocked by server permissions. Please contact support.',
-  };
-  const text = map[code] !== undefined ? map[code] : 'Sign-in failed. Please try again.';
-  return { text, code };
+  return ERROR_MAP[code] !== undefined ? ERROR_MAP[code] : ('Sign-in failed. (' + (code||err.message||'unknown') + ')');
 }
 
-function showError(err) {
-  const { text, code } = friendlyError(err);
-  console.error('Sign-in error:', code, err);
-  const btn = document.getElementById('btn-google');
-  const msg = document.getElementById('status-msg');
-  btn.classList.remove('loading');
-  if (!text) return; // user-cancelled cases: no need to alarm them
-  msg.textContent = code ? `${text} (${code})` : text;
-  msg.className = 'status-msg error';
-  document.getElementById('retry-btn').style.display = 'block';
+function setLoading(btnId, loading) {
+  const btn = document.getElementById(btnId);
+  if (btn) btn.classList.toggle('loading', loading);
 }
 
-function clearError() {
-  document.getElementById('status-msg').textContent = '';
-  document.getElementById('status-msg').className = 'status-msg';
-  document.getElementById('retry-btn').style.display = 'none';
-}
-
-// If already signed in → redirect
-onAuthStateChanged(auth, async (user) => {
+// ── Already signed in ─────────────────────────────────────────────────
+onAuthStateChanged(auth, async user => {
   if (user) {
-    try {
-      await recordUser(user);
-      redirect(user.email);
-    } catch (err) {
-      showError(err);
-    }
+    try { await recordUser(user); redirect(user.email); }
+    catch(err) { showMsg('signin', friendlyErr(err), 'error'); }
   }
 });
 
-// Check for redirect result on page load (this fires after returning from
-// Google on mobile). Every failure path here is now shown to the user —
-// nothing fails silently anymore.
-getRedirectResult(auth).then(async (result) => {
+// ── Redirect result (mobile Google sign-in return) ────────────────────
+getRedirectResult(auth).then(async result => {
   if (result && result.user) {
-    const user = result.user;
-    const msg = document.getElementById('status-msg');
-    msg.textContent = `Welcome, ${user.displayName}! Redirecting…`;
-    msg.className = 'status-msg success';
-    await recordUser(user);
-    setTimeout(() => redirect(user.email), 800);
+    showMsg('signin', `Welcome, ${result.user.displayName || result.user.email}! Redirecting…`, 'success');
+    await recordUser(result.user);
+    setTimeout(() => redirect(result.user.email), 800);
   }
-}).catch((err) => {
-  showError(err);
+}).catch(err => {
+  const msg = friendlyErr(err);
+  if (msg) showMsg('signin', msg, 'error');
 });
 
-window.signInWithGoogle = async function() {
-  if (isInAppBrowser()) { showInAppNotice(); return; }
+// ── Email sign-in ─────────────────────────────────────────────────────
+window.signInEmail = async function() {
+  const email = document.getElementById('si-email').value.trim();
+  const pw    = document.getElementById('si-password').value;
+  if (!email || !pw) { showMsg('signin', 'Please enter your email and password.', 'error'); return; }
+  clearMsg('signin');
+  setLoading('btn-signin-email', true);
+  try {
+    const result = await signInWithEmailAndPassword(auth, email, pw);
+    showMsg('signin', `Welcome back! Redirecting…`, 'success');
+    await recordUser(result.user);
+    setTimeout(() => redirect(result.user.email), 700);
+  } catch(err) {
+    setLoading('btn-signin-email', false);
+    const msg = friendlyErr(err);
+    if (msg) showMsg('signin', msg, 'error');
+  }
+};
 
-  const btn = document.getElementById('btn-google');
-  btn.classList.add('loading');
-  clearError();
+// ── Create account ────────────────────────────────────────────────────
+window.createAccount = async function() {
+  const name  = document.getElementById('su-name').value.trim();
+  const email = document.getElementById('su-email').value.trim();
+  const pw    = document.getElementById('su-password').value;
+  const pw2   = document.getElementById('su-password2').value;
+  clearMsg('signup');
+  if (!name)         { showMsg('signup', 'Please enter your display name.', 'error'); return; }
+  if (!email)        { showMsg('signup', 'Please enter your email.', 'error'); return; }
+  if (pw.length < 8) { showMsg('signup', 'Password must be at least 8 characters.', 'error'); return; }
+  if (pw !== pw2)    { showMsg('signup', "Passwords don't match.", 'error'); return; }
+  setLoading('btn-signup-email', true);
+  try {
+    const result = await createUserWithEmailAndPassword(auth, email, pw);
+    await updateProfile(result.user, { displayName: name });
+    showMsg('signup', `Account created! Welcome, ${name}. Redirecting…`, 'success');
+    await recordUser(result.user, name);
+    setTimeout(() => redirect(result.user.email), 800);
+  } catch(err) {
+    setLoading('btn-signup-email', false);
+    const msg = friendlyErr(err);
+    if (msg) showMsg('signup', msg, 'error');
+  }
+};
 
-  // Detect mobile/Safari — use redirect instead of popup
+// ── Forgot password ───────────────────────────────────────────────────
+window.forgotPassword = async function() {
+  const email = document.getElementById('si-email').value.trim();
+  if (!email) { showMsg('signin', 'Enter your email above first, then click "Forgot password".', 'error'); return; }
+  clearMsg('signin');
+  try {
+    await sendPasswordResetEmail(auth, email);
+    showMsg('signin', `Reset email sent to ${email}. Check your inbox.`, 'success');
+  } catch(err) {
+    showMsg('signin', friendlyErr(err), 'error');
+  }
+};
+
+// ── Google sign-in ────────────────────────────────────────────────────
+window.signInWithGoogle = async function(panel) {
+  if (isInAppBrowser()) {
+    document.getElementById('inapp-notice').style.display = 'block';
+    return;
+  }
+  const btnId = panel === 'su' ? 'btn-google-su' : 'btn-google-si';
+  setLoading(btnId, true);
+  clearMsg(panel === 'su' ? 'signup' : 'signin');
+
   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
   const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
   if (isMobile || isSafari) {
-    // Redirect flow — no popup, works on all mobile browsers
-    try {
-      await signInWithRedirect(auth, provider);
-      // Page navigates away here; nothing else runs until the user returns
-      // and getRedirectResult() above picks it up.
-    } catch (err) {
-      showError(err);
-    }
+    try { await signInWithRedirect(auth, googleProvider); }
+    catch(err) { setLoading(btnId, false); showMsg('signin', friendlyErr(err), 'error'); }
   } else {
-    // Desktop popup flow
     try {
-      const result = await signInWithPopup(auth, provider);
-      const user   = result.user;
-      const msg = document.getElementById('status-msg');
-      msg.textContent = `Welcome, ${user.displayName}! Redirecting…`;
-      msg.className = 'status-msg success';
-      await recordUser(user);
-      setTimeout(() => redirect(user.email), 800);
-    } catch (err) {
-      showError(err);
+      const result = await signInWithPopup(auth, googleProvider);
+      showMsg('signin', `Welcome, ${result.user.displayName}! Redirecting…`, 'success');
+      await recordUser(result.user);
+      setTimeout(() => redirect(result.user.email), 700);
+    } catch(err) {
+      setLoading(btnId, false);
+      const msg = friendlyErr(err);
+      if (msg) showMsg(panel === 'su' ? 'signup' : 'signin', msg, 'error');
     }
   }
 };
 
-async function recordUser(user) {
+// ── Record user to Firestore ──────────────────────────────────────────
+async function recordUser(user, overrideName) {
   const ref  = doc(db, 'users', user.uid);
   const snap = await getDoc(ref);
   const now  = serverTimestamp();
-
-  // Collect session metadata
+  const displayName = overrideName || user.displayName || user.email;
   const sessionData = {
-    timestamp:   now,
-    userAgent:   navigator.userAgent,
-    platform:    navigator.platform,
-    language:    navigator.language,
-    screenW:     screen.width,
-    screenH:     screen.height,
-    timezone:    Intl.DateTimeFormat().resolvedOptions().timeZone,
-    referrer:    document.referrer || 'direct',
+    timestamp: now,
+    userAgent: navigator.userAgent,
+    platform:  navigator.platform,
+    language:  navigator.language,
+    screenW:   screen.width,
+    screenH:   screen.height,
+    timezone:  Intl.DateTimeFormat().resolvedOptions().timeZone,
+    referrer:  document.referrer || 'direct',
   };
-
   if (!snap.exists()) {
     await setDoc(ref, {
-      uid:         user.uid,
-      email:       user.email,
-      displayName: user.displayName,
-      photoURL:    user.photoURL,
-      createdAt:   now,
-      lastLogin:   now,
-      loginCount:  1,
-      status:      'active',
-      isAdmin:     user.email === ADMIN_EMAIL,
+      uid: user.uid, email: user.email,
+      displayName, photoURL: user.photoURL || null,
+      createdAt: now, lastLogin: now, loginCount: 1,
+      status: 'active', isAdmin: user.email === ADMIN_EMAIL,
+      authProvider: user.providerData?.[0]?.providerId || 'password',
       lastSession: sessionData
     });
   } else {
-    const data = snap.data();
     await setDoc(ref, {
-      ...data,
-      displayName: user.displayName,
-      photoURL:    user.photoURL,
-      lastLogin:   now,
-      loginCount:  (data.loginCount || 0) + 1,
+      displayName, photoURL: user.photoURL || null,
+      lastLogin: now, loginCount: (snap.data().loginCount || 0) + 1,
       lastSession: sessionData
     }, { merge: true });
   }
-
-  // Write to loginHistory subcollection (one doc per login)
   const histRef = collection(db, 'users', user.uid, 'loginHistory');
-  await addDoc(histRef, {
-    ...sessionData,
-    email:       user.email,
-    displayName: user.displayName,
-  });
-
-  // Also write to global loginEvents collection for admin monitoring
-  const eventRef = collection(db, 'loginEvents');
-  await addDoc(eventRef, {
-    uid:         user.uid,
-    email:       user.email,
-    displayName: user.displayName,
-    photoURL:    user.photoURL,
-    ...sessionData,
-  });
+  await addDoc(histRef, { ...sessionData, email: user.email, displayName });
+  const evRef = collection(db, 'loginEvents');
+  await addDoc(evRef, { uid: user.uid, email: user.email, displayName, photoURL: user.photoURL || null, ...sessionData });
 }
 
 function redirect(email) {
-  if (email === ADMIN_EMAIL) {
-    // Admin gets choice — go to app or admin panel
-    window.location.href = 'EdgeLog_v61.html';
-  } else {
-    window.location.href = 'EdgeLog_v61.html';
-  }
+  window.location.href = 'EdgeLog_v61.html';
 }
+
+// Allow pressing Enter to submit
+document.addEventListener('keydown', function(e) {
+  if (e.key !== 'Enter') return;
+  const active = document.querySelector('.auth-panel.active');
+  if (!active) return;
+  if (active.id === 'panel-signin') window.signInEmail && signInEmail();
+  else if (active.id === 'panel-signup') window.createAccount && createAccount();
+});
 </script>
 </body>
 </html>
