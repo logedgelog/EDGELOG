@@ -389,6 +389,21 @@ body::after {
 </div>
 
 <script>
+// ── Immediate stubs — defined BEFORE the module loads ────────────────────
+// If the Firebase module script is still loading (or fails), button taps
+// will silently do nothing because the real functions aren't defined yet.
+// These stubs run instantly and show visible feedback in that window.
+function _stubMsg(panel, text) {
+  var el = document.getElementById('status-' + panel);
+  if (el) { el.textContent = text; el.className = 'status-msg'; }
+}
+window.signInWithGoogle = function(panel) {
+  _stubMsg(panel === 'su' ? 'signup' : 'signin', 'Loading sign-in… please wait a moment.');
+};
+window.signInEmail = function() { _stubMsg('signin', 'Loading… please wait.'); };
+window.createAccount = function() { _stubMsg('signup', 'Loading… please wait.'); };
+window.forgotPassword = function() { _stubMsg('signin', 'Loading… please wait.'); };
+
 // ── Load watchdog ───────────────────────────────────────────────────────
 window.__edgeSignInReady = false;
 window.addEventListener('error', function(e){ console.error('Page error:', e.message || e); }, true);
@@ -396,7 +411,7 @@ setTimeout(function(){
   if (window.__edgeSignInReady) return;
   var msg = document.getElementById('status-signin');
   if (msg) {
-    msg.textContent = 'Sign-in is taking too long to load. Try switching between WiFi and mobile data, or reload the page.';
+    msg.textContent = 'Sign-in failed to load. Try switching WiFi ↔ mobile data, disable any ad-blocker, or reload.';
     msg.className = 'status-msg error';
   }
   var retry = document.getElementById('retry-btn');
@@ -442,23 +457,29 @@ window.copyLoginLink = function() {
 <script src="firebase-config.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth, signInWithPopup, signInWithRedirect, getRedirectResult,
+import { initializeAuth, signInWithPopup, signInWithRedirect, getRedirectResult,
          createUserWithEmailAndPassword, signInWithEmailAndPassword,
          sendPasswordResetEmail, updateProfile,
          GoogleAuthProvider, onAuthStateChanged,
-         setPersistence, browserLocalPersistence }
+         browserLocalPersistence, browserPopupRedirectResolver }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc, collection, addDoc, serverTimestamp }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 window.__edgeSignInReady = true;
 
-const app  = initializeApp(FIREBASE_CONFIG);
-const auth = getAuth(app);
-const db   = getFirestore(app);
-const googleProvider = new GoogleAuthProvider();
+const app = initializeApp(FIREBASE_CONFIG);
 
-setPersistence(auth, browserLocalPersistence).catch(e => console.warn('Persistence failed:', e));
+// Use initializeAuth with explicit persistence + resolver.
+// This is the documented fix for silent redirect failures on mobile Safari/Chrome.
+const auth = initializeAuth(app, {
+  persistence: browserLocalPersistence,
+  popupRedirectResolver: browserPopupRedirectResolver,
+});
+
+const db = getFirestore(app);
+const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({ prompt: 'select_account' });
 
 // ── In-app browser detection ──────────────────────────────────────────
 function isInAppBrowser() {
@@ -587,32 +608,41 @@ window.forgotPassword = async function() {
   }
 };
 
-// ── Google sign-in ────────────────────────────────────────────────────
+// ── Google sign-in — popup first on ALL devices ───────────────────────
+// signInWithRedirect has silent failure modes on many mobile browsers
+// (IndexedDB restrictions, SameSite cookie issues, WebView quirks).
+// signInWithPopup works on modern mobile Chrome + Safari and gives
+// instant visible feedback. We only fall back to redirect if the browser
+// explicitly blocks popups (auth/popup-blocked).
 window.signInWithGoogle = async function(panel) {
   if (isInAppBrowser()) {
     document.getElementById('inapp-notice').style.display = 'block';
     return;
   }
+  const statusPanel = panel === 'su' ? 'signup' : 'signin';
   const btnId = panel === 'su' ? 'btn-google-su' : 'btn-google-si';
   setLoading(btnId, true);
-  clearMsg(panel === 'su' ? 'signup' : 'signin');
+  clearMsg(statusPanel);
+  showMsg(statusPanel, 'Opening Google sign-in…', '');
 
-  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-
-  if (isMobile || isSafari) {
-    try { await signInWithRedirect(auth, googleProvider); }
-    catch(err) { setLoading(btnId, false); showMsg('signin', friendlyErr(err), 'error'); }
-  } else {
-    try {
-      const result = await signInWithPopup(auth, googleProvider);
-      showMsg('signin', `Welcome, ${result.user.displayName}! Redirecting…`, 'success');
-      await recordUser(result.user);
-      setTimeout(() => redirect(result.user.email), 700);
-    } catch(err) {
-      setLoading(btnId, false);
+  try {
+    const result = await signInWithPopup(auth, googleProvider);
+    showMsg(statusPanel, `Welcome, ${result.user.displayName || result.user.email}! Redirecting…`, 'success');
+    await recordUser(result.user);
+    setTimeout(() => redirect(result.user.email), 700);
+  } catch(err) {
+    setLoading(btnId, false);
+    if (err.code === 'auth/popup-blocked') {
+      // Browser blocked the popup — fall back to redirect
+      showMsg(statusPanel, 'Popup was blocked — redirecting to Google sign-in…', '');
+      try {
+        await signInWithRedirect(auth, googleProvider);
+      } catch(err2) {
+        showMsg(statusPanel, friendlyErr(err2), 'error');
+      }
+    } else {
       const msg = friendlyErr(err);
-      if (msg) showMsg(panel === 'su' ? 'signup' : 'signin', msg, 'error');
+      if (msg) showMsg(statusPanel, msg, 'error');
     }
   }
 };
