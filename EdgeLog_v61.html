@@ -5180,7 +5180,11 @@ function renderRecap(){
     </div>
   </div>
   ${recapMode==='monthly'?`<div class="card fade-up" style="margin-bottom:12px;padding:18px 16px;">
-    ${buildMonthCalendar(recapOffset)}
+    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
+      <div style="min-width:560px;">
+        ${buildMonthCalendar(recapOffset)}
+      </div>
+    </div>
   </div>`:''}
   ${pts.length ? `<div class="card fade-up" style="margin-bottom:12px">
     <span class="lbl" style="margin-bottom:12px">P&L BY ${recapMode==='weekly'?'DAY':'DATE'}</span>
