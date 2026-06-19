@@ -883,12 +883,19 @@ window.__edgeUid = null;
 window.__edgeCloudPush = function(payload){
   if (!window.__edgeUid) return Promise.resolve();
   try {
+    // IMPORTANT: full overwrite, NOT merge:true. The `accounts` map is keyed
+    // by account id — with merge:true, Firestore only adds/updates the keys
+    // present in this write and silently keeps any old keys that are no
+    // longer present locally (e.g. a deleted account, or a trade removed
+    // from an account's trades array nested deeper than this write covers).
+    // That caused deleted data to "come back" on Restore from Cloud. A full
+    // overwrite makes the cloud copy always exactly match local state.
     return setDoc(doc(_db, 'users', window.__edgeUid, 'appData', 'state'), {
       ...payload,
       email: window.__edgeUserEmail || null,
       displayName: window.__edgeUserName || null,
       updatedAt: serverTimestamp()
-    }, { merge: true }).catch((e) => { console.warn('Cloud sync failed:', e); });
+    }).catch((e) => { console.warn('Cloud sync failed:', e); });
   } catch (e) { console.warn('Cloud sync failed:', e); return Promise.resolve(); }
 };
 // ── Cloud pull — fetches the last-synced snapshot back down. Used by the
