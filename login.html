@@ -457,25 +457,23 @@ window.copyLoginLink = function() {
 <script src="firebase-config.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { initializeAuth, signInWithPopup, signInWithRedirect, getRedirectResult,
+import { getAuth, signInWithPopup, signInWithRedirect, getRedirectResult,
          createUserWithEmailAndPassword, signInWithEmailAndPassword,
          sendPasswordResetEmail, updateProfile,
          GoogleAuthProvider, onAuthStateChanged,
-         browserLocalPersistence, browserPopupRedirectResolver }
+         setPersistence, browserLocalPersistence, browserPopupRedirectResolver }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc, collection, addDoc, serverTimestamp }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 window.__edgeSignInReady = true;
 
-const app = initializeApp(FIREBASE_CONFIG);
-
-// Use initializeAuth with explicit persistence + resolver.
-// This is the documented fix for silent redirect failures on mobile Safari/Chrome.
-const auth = initializeAuth(app, {
-  persistence: browserLocalPersistence,
-  popupRedirectResolver: browserPopupRedirectResolver,
-});
+const app  = initializeApp(FIREBASE_CONFIG);
+// Use getAuth (simpler, more compatible) + set persistence separately.
+// initializeAuth with browserPopupRedirectResolver can conflict with
+// signInWithPopup on some mobile browsers.
+const auth = getAuth(app);
+setPersistence(auth, browserLocalPersistence).catch(e => console.warn('Persistence:', e));
 
 const db = getFirestore(app);
 const googleProvider = new GoogleAuthProvider();
@@ -494,7 +492,7 @@ if (isInAppBrowser()) {
   document.getElementById('inapp-notice').style.display = 'block';
 }
 
-// ── Error handling ────────────────────────────────────────────────────
+// ── Error handling — show raw code for ALL errors (no silent suppression) ──
 const ERROR_MAP = {
   'auth/user-not-found':          'No account found with this email.',
   'auth/wrong-password':          'Incorrect password. Try again or reset it.',
@@ -504,16 +502,13 @@ const ERROR_MAP = {
   'auth/invalid-email':           'Please enter a valid email address.',
   'auth/too-many-requests':       'Too many attempts. Try again in a few minutes.',
   'auth/network-request-failed':  'Network error. Check your connection and try again.',
-  'auth/unauthorized-domain':     "This domain isn't authorized for sign-in. Contact support.",
-  'auth/popup-blocked':           'Popup blocked by browser. The redirect method will be tried instead.',
-  'auth/cancelled-popup-request': '',
-  'auth/popup-closed-by-user':    '',
+  'auth/unauthorized-domain':     "This domain isn't authorized for sign-in. Check Firebase console.",
+  'auth/popup-blocked':           'Popup blocked — switching to redirect sign-in…',
   'auth/web-storage-unsupported': 'Browser storage is blocked (private mode?). Try a normal browser tab.',
-  'permission-denied':            'Access denied. Please contact support.',
+  'permission-denied':            'Access denied by server. Please contact support.',
 };
 
 function showMsg(panel, text, type) {
-  // panel = 'signin' | 'signup'
   const el = document.getElementById('status-' + panel);
   if (!el) return;
   el.textContent = text;
@@ -523,7 +518,10 @@ function clearMsg(panel) { showMsg(panel, '', ''); }
 
 function friendlyErr(err) {
   const code = err && err.code ? err.code : '';
-  return ERROR_MAP[code] !== undefined ? ERROR_MAP[code] : ('Sign-in failed. (' + (code||err.message||'unknown') + ')');
+  console.error('[EdgeLog auth error]', code, err && err.message);
+  // Show ALL errors with the raw code — nothing suppressed silently
+  if (ERROR_MAP[code]) return ERROR_MAP[code] + ' (' + code + ')';
+  return 'Sign-in error: ' + (code || (err && err.message) || 'unknown');
 }
 
 function setLoading(btnId, loading) {
@@ -622,19 +620,20 @@ window.signInWithGoogle = async function(panel) {
   showMsg(statusPanel, 'Opening Google sign-in…', '');
 
   try {
-    const result = await signInWithPopup(auth, googleProvider);
-    // onAuthStateChanged also fires here — handleAuthSuccess guards double-call
+    // Pass browserPopupRedirectResolver explicitly here (not at auth init)
+    const result = await signInWithPopup(auth, googleProvider, browserPopupRedirectResolver);
+    // onAuthStateChanged also fires — handleAuthSuccess guards double-call
     handleAuthSuccess(result.user, statusPanel);
   } catch(err) {
     setLoading(btnId, false);
     clearMsg(statusPanel);
     if (err.code === 'auth/popup-blocked') {
       showMsg(statusPanel, 'Popup blocked — redirecting to Google sign-in…', '');
-      try { await signInWithRedirect(auth, googleProvider); }
+      try { await signInWithRedirect(auth, googleProvider, browserPopupRedirectResolver); }
       catch(err2) { showMsg(statusPanel, friendlyErr(err2), 'error'); }
     } else {
-      const msg = friendlyErr(err);
-      if (msg) showMsg(statusPanel, msg, 'error');
+      // Show ALL errors including auth/cancelled-popup-request so we can debug
+      showMsg(statusPanel, friendlyErr(err), 'error');
     }
   }
 };
