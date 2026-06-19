@@ -1653,6 +1653,7 @@ function saveAccounts(){
   try{
     localStorage.setItem(ACCOUNTS_KEY,JSON.stringify(allAccounts));
     localStorage.setItem(ACTIVE_ACC_KEY,activeAccountId);
+    localStorage.setItem('edgelog-last-save-ts', String(Date.now()));
   }catch(e){
     if(e && (e.name==='QuotaExceededError'||e.name==='NS_ERROR_DOM_QUOTA_REACHED'||e.code===22)){
       showToast('⚠️ Storage full! Export a backup now — new saves may be lost.',6000);
@@ -1720,10 +1721,51 @@ function cloudSave(){
   clearTimeout(_cloudSaveTimer);
   _cloudSaveTimer=setTimeout(cloudSaveNow, 2500);
 }
-// Push once as soon as auth is ready (covers existing local data on first
-// run of this version), and make a best-effort final push when the tab is
-// hidden/closed so the cloud copy doesn't lag too far behind.
-window.addEventListener('edge-auth-ready', cloudSaveNow);
+// On auth-ready: pull cloud snapshot first, apply it if it's newer than local,
+// then push so cloud always reflects latest state.
+// This is what makes deletions (and any edit) propagate across devices automatically.
+window.addEventListener('edge-auth-ready', async () => {
+  try {
+    if (typeof window.__edgeCloudFetch !== 'function') { cloudSaveNow(); return; }
+    const data = await window.__edgeCloudFetch();
+    if (!data || !data.accounts || !Object.keys(data.accounts).length) {
+      // Nothing in cloud yet — push local up
+      cloudSaveNow(); return;
+    }
+    // Compare timestamps: cloud updatedAt vs local timestamp saved on every write
+    let cloudTs = 0;
+    try {
+      if (data.updatedAt && typeof data.updatedAt.seconds === 'number') cloudTs = data.updatedAt.seconds * 1000;
+      else if (data.updatedAt) cloudTs = new Date(data.updatedAt).getTime();
+    } catch(e) {}
+    let localTs = 0;
+    try { localTs = parseInt(localStorage.getItem('edgelog-last-save-ts') || '0', 10); } catch(e) {}
+
+    if (cloudTs > localTs) {
+      // Cloud is newer — apply it silently (another device made changes we don't have)
+      allAccounts = data.accounts;
+      activeAccountId = (data.activeAccountId && allAccounts[data.activeAccountId])
+        ? data.activeAccountId : Object.keys(allAccounts)[0];
+      if (data.accountRisk !== undefined) accountRisk = data.accountRisk;
+      if (data.commissionPerTrade !== undefined) commissionPerTrade = data.commissionPerTrade;
+      if (data.selectedInstrument) selectedInstrument = data.selectedInstrument;
+      try {
+        localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(allAccounts));
+        localStorage.setItem(ACTIVE_ACC_KEY, activeAccountId);
+        localStorage.setItem('edgelog-last-save-ts', String(cloudTs));
+      } catch(e) {}
+      if (typeof buildAccountSwitcher === 'function') buildAccountSwitcher();
+      if (typeof renderTab === 'function') renderTab();
+      showToast('☁️ Synced from cloud');
+    } else {
+      // Local is newer or same — push local up to cloud
+      cloudSaveNow();
+    }
+  } catch(e) {
+    console.warn('Auto cloud sync failed:', e);
+    cloudSaveNow();
+  }
+});
 document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='hidden') cloudSaveNow(); });
 window.addEventListener('pagehide', cloudSaveNow);
 
