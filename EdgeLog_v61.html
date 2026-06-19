@@ -861,7 +861,7 @@ body.light-mode .tab-btn.active{
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { initializeAuth, onAuthStateChanged, signOut, browserLocalPersistence, browserPopupRedirectResolver }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, serverTimestamp }
+import { getFirestore, doc, setDoc, getDoc, serverTimestamp }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const _app  = initializeApp(FIREBASE_CONFIG);
@@ -890,6 +890,15 @@ window.__edgeCloudPush = function(payload){
       updatedAt: serverTimestamp()
     }, { merge: true }).catch((e) => { console.warn('Cloud sync failed:', e); });
   } catch (e) { console.warn('Cloud sync failed:', e); return Promise.resolve(); }
+};
+// ── Cloud pull — fetches the last-synced snapshot back down. Used by the
+// "Restore from Cloud" recovery option in Backup & Restore.
+window.__edgeCloudFetch = async function(){
+  if (!window.__edgeUid) return null;
+  try {
+    const snap = await getDoc(doc(_db, 'users', window.__edgeUid, 'appData', 'state'));
+    return snap.exists() ? snap.data() : null;
+  } catch (e) { console.warn('Cloud fetch failed:', e); throw e; }
 };
 
 // Show a loading overlay until auth resolves
@@ -1241,12 +1250,7 @@ onAuthStateChanged(_auth, (user) => {
     <div style="margin-bottom:13px">
       <span class="lbl">SETUP TYPE</span>
       <input type="hidden" id="f-setup-type" value=""/>
-      <div style="display:flex;flex-wrap:wrap;gap:6px" id="setup-type-chips">
-        <button type="button" data-v="OB+BOS" onclick="selectSetupType(this)" style="padding:6px 12px;border-radius:20px;border:1px solid var(--border);background:var(--bg4);color:var(--text2);font-family:var(--mono);font-size:11px;cursor:pointer;transition:all .15s;">OB+BOS</button>
-        <button type="button" data-v="OB+BOS(FVG)" onclick="selectSetupType(this)" style="padding:6px 12px;border-radius:20px;border:1px solid var(--border);background:var(--bg4);color:var(--text2);font-family:var(--mono);font-size:11px;cursor:pointer;transition:all .15s;">OB+BOS(FVG)</button>
-        <button type="button" data-v="2x BO(Reversal)" onclick="selectSetupType(this)" style="padding:6px 12px;border-radius:20px;border:1px solid var(--border);background:var(--bg4);color:var(--text2);font-family:var(--mono);font-size:11px;cursor:pointer;transition:all .15s;">2x BO(Reversal)</button>
-        <button type="button" onclick="promptCustomSetupType()" style="padding:6px 12px;border-radius:20px;border:1px solid rgba(169,124,245,.35);background:rgba(169,124,245,.08);color:var(--purple);font-family:var(--mono);font-size:11px;cursor:pointer;transition:all .15s;">＋ Custom</button>
-      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px" id="setup-type-chips"></div>
     </div>
     <div style="margin-bottom:13px">
       <span class="lbl">ICT CONFLUENCES</span>
@@ -1582,6 +1586,9 @@ const RISK_KEY       ='mnq-akshay-risk';
 const INSTRUMENT_KEY ='mnq-akshay-instrument';
 // ── All other feature keys (defined here for single-source-of-truth) ──
 const CUSTOM_CONF_KEY='mnq-custom-confs-v1';
+const CUSTOM_SETUP_TYPE_KEY='mnq-custom-setup-types-v1';
+const REMOVED_BUILTIN_CONF_KEY='mnq-removed-builtin-confs-v1';
+const REMOVED_BUILTIN_SETUP_TYPE_KEY='mnq-removed-builtin-setup-types-v1';
 const GOALS_KEY      ='mnq-akshay-goals-v1';
 const PB_KEY         ='mnq-playbook-v1';
 const GP_KEY         ='mnq-gameplans-v1';
@@ -1597,6 +1604,7 @@ const EOD_KEY        ='mnq-eod-debrief-v1';
 const LOCK_KEY       ='mnq-loss-lock-v1';
 const SESSION_COLORS={'New York AM':'#4fb3ef','New York PM':'#a97cf5','London Open':'#ff6b35','Asia':'#2ecf7c'};
 const ICT=['Kill Zone','MSS','POI'];
+const BUILTIN_SETUP_TYPES=['OB+BOS','OB+BOS(FVG)','2x BO(Reversal)'];
 
 // ═══ INSTRUMENT CONFIG ═══════════════════════════
 const INSTRUMENTS = {
@@ -4501,10 +4509,10 @@ function buildBenchmarkComparison(){
 
   // Trend arrows vs all-time baseline
   function trend(val, base, higherIsBetter=true){
-    if(!base || val===base) return '<span style="color:var(--text3)">—</span>';
+    if(!base || val===base) return '<span style="color:var(--text3);font-size:11px">—</span>';
     const up = parseFloat(val) > parseFloat(base);
     const better = higherIsBetter ? up : !up;
-    return `<span style="color:${better?'var(--green)':'var(--red)'};font-size:10px">${up?'↑':'↓'}</span>`;
+    return `<span style="color:${better?'var(--green)':'var(--red)'};font-size:12px;font-weight:700">${up?'↑':'↓'}</span>`;
   }
 
   const metrics = [
@@ -4519,10 +4527,10 @@ function buildBenchmarkComparison(){
   ];
 
   const headerCols = periods.map(p=>`
-    <th style="padding:8px 6px;text-align:center;font-size:9px;letter-spacing:1.2px;color:var(--text3);font-weight:600;white-space:nowrap;border-bottom:1px solid var(--border)">${p.label}</th>
+    <th style="padding:11px 8px;text-align:center;font-family:var(--mono);font-size:11px;letter-spacing:1px;color:var(--text1);font-weight:700;white-space:nowrap;border-bottom:2px solid var(--border2)">${p.label}</th>
   `).join('');
 
-  const rows = metrics.map(m=>{
+  const rows = metrics.map((m,mi)=>{
     const allVal = all[m.key];
     const cells = periods.map(p=>{
       const v = p.data[m.key];
@@ -4533,10 +4541,11 @@ function buildBenchmarkComparison(){
       if(m.key==='pnl'||m.key==='exp') col = numV>=0?'var(--green)':'var(--red)';
       else if(m.key==='wr') col = numV>=50?'var(--green)':'var(--red)';
       else if(m.key==='pf'&&v!=='∞') col = numV>=1.5?'var(--green)':numV>=1?'var(--gold)':'var(--red)';
-      return `<td style="padding:8px 6px;text-align:center;font-family:var(--display);font-size:13px;color:${col};border-bottom:1px solid rgba(255,255,255,.03)">${m.fmt(v)}${trendHtml}</td>`;
+      return `<td style="padding:13px 8px;text-align:center;font-family:var(--mono);font-size:14px;font-weight:600;color:${col};border-bottom:1px solid var(--border);white-space:nowrap">${m.fmt(v)}<span style="margin-left:5px;display:inline-block">${trendHtml}</span></td>`;
     }).join('');
-    return `<tr>
-      <td style="padding:8px 10px;font-size:9px;color:var(--text3);letter-spacing:1px;border-bottom:1px solid rgba(255,255,255,.03);white-space:nowrap">${m.label}</td>
+    const rowBg = mi%2===1 ? 'background:rgba(255,255,255,.02)' : '';
+    return `<tr style="${rowBg}">
+      <td style="padding:13px 12px;font-family:var(--mono);font-size:11px;color:var(--text2);font-weight:600;letter-spacing:.8px;border-bottom:1px solid var(--border);white-space:nowrap">${m.label}</td>
       ${cells}
     </tr>`;
   }).join('');
@@ -4561,17 +4570,17 @@ function buildBenchmarkComparison(){
       <div style="font-family:var(--display);font-size:18px;font-weight:600;font-style:italic;margin-bottom:14px;color:var(--text1)">1 Day / 1 Week / 1 Month / 3 Month / All-Time</div>
 
       <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
-        <table style="width:100%;border-collapse:collapse;min-width:260px">
+        <table style="width:100%;border-collapse:collapse;min-width:480px">
           <thead>
             <tr>
-              <th style="padding:8px 10px;text-align:left;font-size:9px;letter-spacing:1.2px;color:var(--text3);border-bottom:1px solid var(--border)">METRIC</th>
+              <th style="padding:11px 12px;text-align:left;font-family:var(--mono);font-size:11px;letter-spacing:1px;color:var(--text2);font-weight:700;border-bottom:2px solid var(--border2);white-space:nowrap">METRIC</th>
               ${headerCols}
             </tr>
           </thead>
           <tbody>${rows}</tbody>
         </table>
       </div>
-      <div style="margin-top:10px;font-size:9px;color:var(--text3);text-align:center;letter-spacing:.5px">↑ green = better than all-time baseline · ↓ red = worse</div>
+      <div style="margin-top:12px;font-size:10.5px;color:var(--text2);text-align:center;letter-spacing:.4px"><span style="color:var(--green);font-weight:700">↑</span> green = better than all-time baseline &nbsp;·&nbsp; <span style="color:var(--red);font-weight:700">↓</span> red = worse</div>
     </div>`;
 }
 
@@ -5757,12 +5766,110 @@ function selectSetupType(btn){
 function syncSetupTypeChips(){
   var v=document.getElementById('f-setup-type');
   if(!v)return;
-  document.querySelectorAll('#setup-type-chips button').forEach(function(b){
+  document.querySelectorAll('#setup-type-chips button[data-v]').forEach(function(b){
     var sel=b.dataset.v===v.value;
     b.style.background=sel?'rgba(169,124,245,.25)':'var(--bg4)';
     b.style.borderColor=sel?'rgba(169,124,245,.55)':'var(--border)';
     b.style.color=sel?'var(--purple)':'var(--text2)';
   });
+}
+// ── Custom setup type persistence ──────────────────
+// (keys defined at top constants block)
+function loadCustomSetupTypes(){
+  try{ return JSON.parse(localStorage.getItem(CUSTOM_SETUP_TYPE_KEY)||'[]'); }catch(e){ return []; }
+}
+function saveCustomSetupTypes(arr){
+  try{ localStorage.setItem(CUSTOM_SETUP_TYPE_KEY, JSON.stringify(arr)); }catch(e){}
+}
+function addCustomSetupType(val){
+  const existing = loadCustomSetupTypes();
+  if(!existing.includes(val)){ existing.push(val); saveCustomSetupTypes(existing); }
+}
+function removeCustomSetupType(val){
+  saveCustomSetupTypes(loadCustomSetupTypes().filter(s=>s!==val));
+}
+function loadRemovedBuiltinSetupTypes(){
+  try{ return JSON.parse(localStorage.getItem(REMOVED_BUILTIN_SETUP_TYPE_KEY)||'[]'); }catch(e){ return []; }
+}
+function saveRemovedBuiltinSetupTypes(arr){
+  try{ localStorage.setItem(REMOVED_BUILTIN_SETUP_TYPE_KEY, JSON.stringify(arr)); }catch(e){}
+}
+function hideBuiltinSetupType(val){
+  const existing = loadRemovedBuiltinSetupTypes();
+  if(!existing.includes(val)){ existing.push(val); saveRemovedBuiltinSetupTypes(existing); }
+}
+function restoreDefaultSetupTypes(){
+  if(!confirm('Restore the default setup types (OB+BOS, OB+BOS(FVG), 2x BO(Reversal))? Your custom ones stay as they are.')) return;
+  saveRemovedBuiltinSetupTypes([]);
+  buildSetupTypeChips();
+}
+
+function buildSetupTypeChips(){
+  const chips=document.getElementById('setup-type-chips');
+  if(!chips) return;
+  chips.innerHTML='';
+  const fSetupType=document.getElementById('f-setup-type');
+  const currentVal = fSetupType ? fSetupType.value : '';
+  const removedBuiltins = loadRemovedBuiltinSetupTypes();
+  const visibleBuiltins = BUILTIN_SETUP_TYPES.filter(st=>!removedBuiltins.includes(st));
+  const customTypes = loadCustomSetupTypes();
+  // Visible built-ins + saved customs + (if editing a trade) its setup type even if not yet in either list
+  const extra = (currentVal && !visibleBuiltins.includes(currentVal) && !customTypes.includes(currentVal)) ? [currentVal] : [];
+  const allTypes = [...visibleBuiltins, ...customTypes, ...extra];
+
+  allTypes.forEach(st=>{
+    const isBuiltin = BUILTIN_SETUP_TYPES.includes(st);
+    const sel = currentVal===st;
+    const b=document.createElement('button');
+    b.type='button'; b.dataset.v=st;
+    b.style.cssText='padding:6px 12px;border-radius:20px;border:1px solid '+(sel?'rgba(169,124,245,.55)':'var(--border)')+';background:'+(sel?'rgba(169,124,245,.25)':'var(--bg4)')+';color:'+(sel?'var(--purple)':'var(--text2)')+';font-family:var(--mono);font-size:11px;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;';
+    const label=document.createElement('span');
+    label.textContent=st;
+    b.appendChild(label);
+    b.addEventListener('click',function(){ selectSetupType(b); });
+
+    // Every chip can be removed — built-ins and customs alike
+    const del=document.createElement('span');
+    del.textContent='×';
+    del.title='Remove this setup type';
+    del.style.cssText='margin-left:6px;font-size:11px;opacity:.6;cursor:pointer;line-height:1;';
+    del.addEventListener('click',function(e){
+      e.stopPropagation();
+      if(!confirm(`Remove "${st}" from setup types?`)) return;
+      if(isBuiltin) hideBuiltinSetupType(st);
+      else removeCustomSetupType(st);
+      if(fSetupType && fSetupType.value===st) fSetupType.value='';
+      buildSetupTypeChips();
+    });
+    b.appendChild(del);
+    chips.appendChild(b);
+  });
+
+  // ＋ Custom button
+  const plus=document.createElement('button');
+  plus.type='button';
+  plus.textContent='＋ Custom';
+  plus.style.cssText='padding:6px 12px;border-radius:20px;border:1px solid rgba(169,124,245,.35);background:rgba(169,124,245,.08);color:var(--purple);font-family:var(--mono);font-size:11px;cursor:pointer;transition:all .15s;';
+  plus.addEventListener('click', promptCustomSetupType);
+  chips.appendChild(plus);
+
+  // Reset-to-defaults link — only shown once a built-in has actually been removed
+  if(removedBuiltins.length){
+    const reset=document.createElement('button');
+    reset.type='button';
+    reset.textContent='↺ Restore defaults';
+    reset.style.cssText='padding:6px 12px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text3);font-family:var(--mono);font-size:10px;cursor:pointer;';
+    reset.addEventListener('click', restoreDefaultSetupTypes);
+    chips.appendChild(reset);
+  }
+}
+function promptCustomSetupType(){
+  const val=(prompt('Enter custom setup type:')||'').trim();
+  if(!val)return;
+  addCustomSetupType(val);                              // persist to localStorage
+  const fSetupType=document.getElementById('f-setup-type');
+  if(fSetupType) fSetupType.value=val;
+  buildSetupTypeChips();
 }
 // ── Custom confluence persistence ──────────────────
 // (key defined at top constants block)
@@ -5779,16 +5886,33 @@ function addCustomConf(val){
 function removeCustomConf(val){
   saveCustomConfs(loadCustomConfs().filter(c=>c!==val));
 }
+function loadRemovedBuiltinConfs(){
+  try{ return JSON.parse(localStorage.getItem(REMOVED_BUILTIN_CONF_KEY)||'[]'); }catch(e){ return []; }
+}
+function saveRemovedBuiltinConfs(arr){
+  try{ localStorage.setItem(REMOVED_BUILTIN_CONF_KEY, JSON.stringify(arr)); }catch(e){}
+}
+function hideBuiltinConf(val){
+  const existing = loadRemovedBuiltinConfs();
+  if(!existing.includes(val)){ existing.push(val); saveRemovedBuiltinConfs(existing); }
+}
+function restoreDefaultConfs(){
+  if(!confirm('Restore the default ICT confluences (Kill Zone, MSS, POI)? Your custom ones stay as they are.')) return;
+  saveRemovedBuiltinConfs([]);
+  buildConfBtns();
+}
 
 function buildConfBtns(){
   const c=document.getElementById('conf-btns'); c.innerHTML='';
+  const removedBuiltins = loadRemovedBuiltinConfs();
+  const visibleBuiltins = ICT.filter(cf=>!removedBuiltins.includes(cf));
   const customConfs = loadCustomConfs();
-  // Built-ins + any saved customs + any on current trade not yet in saved list
-  const extraFromTrade = formConfs.filter(cf=>!ICT.includes(cf)&&!customConfs.includes(cf));
-  const allConfs=[...ICT, ...customConfs, ...extraFromTrade];
+  // Visible built-ins + any saved customs + any on current trade not yet in either list
+  const extraFromTrade = formConfs.filter(cf=>!visibleBuiltins.includes(cf)&&!customConfs.includes(cf));
+  const allConfs=[...visibleBuiltins, ...customConfs, ...extraFromTrade];
 
   allConfs.forEach(cf=>{
-    const isCustom = !ICT.includes(cf);
+    const isBuiltin = ICT.includes(cf);
     const b=document.createElement('button'); b.className='chip'; b.type='button';
     const sel=formConfs.includes(cf);
     b.style.position='relative';
@@ -5796,21 +5920,20 @@ function buildConfBtns(){
     if(sel){ b.style.background='rgba(169,124,245,.18)'; b.style.borderColor='rgba(169,124,245,.38)'; b.style.color='var(--purple)'; }
     b.addEventListener('click',()=>{ formConfs=sel?formConfs.filter(x=>x!==cf):[...formConfs,cf]; buildConfBtns(); });
 
-    // Custom chips get a small ×-delete to remove from saved list
-    if(isCustom){
-      const del=document.createElement('span');
-      del.textContent='×';
-      del.title='Remove custom confluence';
-      del.style.cssText='margin-left:5px;font-size:10px;opacity:.55;cursor:pointer;line-height:1;vertical-align:middle;';
-      del.addEventListener('click',e=>{
-        e.stopPropagation();
-        if(!confirm(`Remove "${cf}" from custom confluences?`)) return;
-        removeCustomConf(cf);
-        formConfs=formConfs.filter(x=>x!==cf);
-        buildConfBtns();
-      });
-      b.appendChild(del);
-    }
+    // Every chip can be removed — built-ins and customs alike
+    const del=document.createElement('span');
+    del.textContent='×';
+    del.title='Remove this confluence';
+    del.style.cssText='margin-left:5px;font-size:10px;opacity:.55;cursor:pointer;line-height:1;vertical-align:middle;';
+    del.addEventListener('click',e=>{
+      e.stopPropagation();
+      if(!confirm(`Remove "${cf}" from confluences?`)) return;
+      if(isBuiltin) hideBuiltinConf(cf);
+      else removeCustomConf(cf);
+      formConfs=formConfs.filter(x=>x!==cf);
+      buildConfBtns();
+    });
+    b.appendChild(del);
     c.appendChild(b);
   });
 
@@ -5827,26 +5950,15 @@ function buildConfBtns(){
     buildConfBtns();
   });
   c.appendChild(plus);
-}
-function promptCustomSetupType(){
-  const val=(prompt('Enter custom setup type:')||'').trim();
-  if(!val)return;
-  const chips=document.getElementById('setup-type-chips');
-  // Deselect all first
-  chips.querySelectorAll('[data-v]').forEach(b=>{b.style.background='var(--bg4)';b.style.borderColor='var(--border)';b.style.color='var(--text2)';});
-  // Check if this chip already exists
-  let existing=[...chips.querySelectorAll('[data-v]')].find(b=>b.dataset.v===val);
-  if(!existing){
-    const newBtn=document.createElement('button');
-    newBtn.type='button';newBtn.dataset.v=val;
-    newBtn.textContent=val;
-    newBtn.style.cssText='padding:6px 12px;border-radius:20px;border:1px solid var(--border);background:var(--bg4);color:var(--text2);font-family:var(--mono);font-size:11px;cursor:pointer;transition:all .15s;';
-    newBtn.addEventListener('click',function(){selectSetupType(this);});
-    // Insert before the + Custom button (last child)
-    chips.insertBefore(newBtn,chips.lastElementChild);
-    existing=newBtn;
+
+  // Reset-to-defaults link — only shown once a built-in has actually been removed
+  if(removedBuiltins.length){
+    const reset=document.createElement('button'); reset.type='button';
+    reset.textContent='↺ Restore defaults';
+    reset.style.cssText='padding:5px 11px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text3);font-family:var(--mono);font-size:9.5px;cursor:pointer;';
+    reset.addEventListener('click', restoreDefaultConfs);
+    c.appendChild(reset);
   }
-  selectSetupType(existing);
 }
 function setDir(d){
   formDir=d;
@@ -5911,7 +6023,7 @@ function openForm(id){
   const fSetupType=document.getElementById('f-setup-type');if(fSetupType)fSetupType.value=t?t.setupType||'':'';
   const fMae=document.getElementById('f-mae');if(fMae)fMae.value=t?t.mae||'':'';
   const fMfe=document.getElementById('f-mfe');if(fMfe)fMfe.value=t?t.mfe||'':'';
-  syncSetupTypeChips();
+  buildSetupTypeChips();
   setDir(formDir);buildSessionBtns();buildConfBtns();buildPlaybookSelector();
   // Pre-select the linked playbook setup if editing
   const pbPicker = document.getElementById('form-playbook-picker');
@@ -6894,6 +7006,7 @@ function renderTools(){
     +'<div style="display:flex;flex-direction:column;gap:8px">'
     +'<button onclick="backupAll()" style="display:flex;align-items:center;gap:12px;width:100%;padding:13px 15px;border-radius:12px;background:rgba(169,124,245,.08);border:1px solid rgba(169,124,245,.2);color:var(--purple);font-family:var(--mono);font-size:12px;cursor:pointer;text-align:left;"><span style="font-size:20px">💾</span><div><div style="font-weight:600">Export Full Backup (JSON)</div><div style="font-size:9px;color:var(--text3);margin-top:2px">All accounts, trades, balance, goals</div></div></button>'
     +'<label style="display:flex;align-items:center;gap:12px;width:100%;padding:13px 15px;border-radius:12px;background:rgba(46,207,124,.06);border:1px solid rgba(46,207,124,.15);color:var(--green);font-family:var(--mono);font-size:12px;cursor:pointer;"><span style="font-size:20px">📂</span><div><div style="font-weight:600">Restore from Backup</div><div style="font-size:9px;color:var(--text3);margin-top:2px">Select a .json backup file</div></div><input type="file" accept=".json" onchange="restoreAll(this)" style="display:none"/></label>'
+    +'<button onclick="restoreFromCloud()" style="display:flex;align-items:center;gap:12px;width:100%;padding:13px 15px;border-radius:12px;background:rgba(79,174,227,.07);border:1px solid rgba(79,174,227,.2);color:var(--blue);font-family:var(--mono);font-size:12px;cursor:pointer;text-align:left;"><span style="font-size:20px">☁️</span><div><div style="font-weight:600">Restore from Cloud Backup</div><div style="font-size:9px;color:var(--text3);margin-top:2px">Pull your last auto-synced snapshot from this account</div></div></button>'
     +'</div></div>'
 
     +'<div class="card fade-up" style="margin-bottom:12px"><span class="lbl" style="margin-bottom:8px">SEARCH & FILTER TRADES</span>'
@@ -7695,6 +7808,74 @@ function clearCSVImporter(){
 function importCSV(){ runSmartImport(); }
 
 
+
+// ── Show a small dismissable status panel for cloud restore feedback ──
+function showCloudStatus(msg, isErr, loading){
+  let panel=document.getElementById('cloud-restore-status-panel');
+  if(!panel){
+    panel=document.createElement('div');
+    panel.id='cloud-restore-status-panel';
+    panel.style.cssText='position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:9999;background:#1a1a2e;border:1px solid rgba(79,174,227,.5);border-radius:14px;padding:14px 18px;font-family:monospace;font-size:12px;max-width:90vw;min-width:260px;box-shadow:0 8px 32px rgba(0,0,0,.7);white-space:pre-line;';
+    document.body.appendChild(panel);
+  }
+  const color = loading ? '#4fb3ef' : (isErr?'#f0445e':'#2ecf7c');
+  panel.innerHTML='<div style="color:#4fb3ef;font-size:10px;letter-spacing:1.5px;margin-bottom:6px">☁️ CLOUD RESTORE</div>'
+    +'<div style="color:'+color+';line-height:1.7">'+msg+'</div>'
+    +(loading?'':'<div style="margin-top:10px;font-size:10px;color:#5e6175">Tap anywhere to dismiss</div>');
+  panel.onclick=()=>{ if(!loading) panel.remove(); };
+  if(!isErr && !loading) setTimeout(()=>{ if(panel.parentNode) panel.remove(); },6000);
+}
+
+// ── Restore from Cloud — pulls the last auto-synced snapshot for this
+// signed-in account back down from Firestore and overwrites local data
+// after the person confirms. This is the recovery path for cases where
+// local browser storage was cleared/lost but cloud sync had already run.
+async function restoreFromCloud(){
+  if (typeof window.__edgeCloudFetch !== 'function') {
+    showCloudStatus('Cloud sync isn\'t ready yet. Please wait a moment and try again.', true);
+    return;
+  }
+  showCloudStatus('Checking for a cloud backup…', false, true);
+  let data;
+  try {
+    data = await window.__edgeCloudFetch();
+  } catch (e) {
+    showCloudStatus('✗ Could not reach the cloud backup:\n'+(e.message||e), true);
+    return;
+  }
+  if (!data || !data.accounts || !Object.keys(data.accounts).length) {
+    showCloudStatus('No cloud backup found for this account yet.\n\nCloud sync only saves automatically while signed in on a device — if this is the first device to ever sync, or sync never completed, there\'s nothing to restore.', true);
+    return;
+  }
+  const accKeys = Object.keys(data.accounts);
+  let totalTrades = 0;
+  accKeys.forEach(k => { totalTrades += (data.accounts[k].trades||[]).length; });
+  let syncedAt = 'unknown time';
+  try {
+    if (data.updatedAt && typeof data.updatedAt.seconds === 'number') {
+      syncedAt = new Date(data.updatedAt.seconds*1000).toLocaleString();
+    } else if (data.updatedAt) {
+      syncedAt = new Date(data.updatedAt).toLocaleString();
+    }
+  } catch(e){}
+
+  const localTradeCount = Object.values(allAccounts).reduce((s,a)=>s+(a.trades||[]).length,0);
+  const ok = confirm(
+    'Cloud backup found:\n'
+    + accKeys.length + ' account(s), ' + totalTrades + ' total trade(s)\n'
+    + 'Last synced: ' + syncedAt + '\n\n'
+    + 'Currently on this device: ' + Object.keys(allAccounts).length + ' account(s), ' + localTradeCount + ' trade(s)\n\n'
+    + 'Restoring will REPLACE all current local data on this device with the cloud version above. This cannot be undone.\n\nContinue?'
+  );
+  if (!ok) return;
+
+  allAccounts = data.accounts;
+  activeAccountId = (data.activeAccountId && allAccounts[data.activeAccountId]) ? data.activeAccountId : Object.keys(allAccounts)[0];
+  saveAccounts();
+  if (typeof buildAccountSwitcher === 'function') buildAccountSwitcher();
+  if (typeof renderTab === 'function') renderTab();
+  showCloudStatus('✓ Restored '+accKeys.length+' account(s) with '+totalTrades+' trade(s) from cloud.', false);
+}
 
 function backupAll(){
   // Collect all optional localStorage keys so restore is complete
