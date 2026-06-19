@@ -5179,7 +5179,7 @@ function renderRecap(){
       </div>
     </div>
   </div>
-  ${recapMode==='monthly'?`<div class="card fade-up" style="margin-bottom:12px;padding:18px 16px;">
+  ${recapMode==='monthly'?`<div class="card fade-up" style="margin-bottom:12px;padding:18px 16px;overflow:visible;contain:none;">
     <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
       <div style="min-width:560px;">
         ${buildMonthCalendar(recapOffset)}
