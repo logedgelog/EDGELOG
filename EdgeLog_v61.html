@@ -325,10 +325,11 @@ body.light-mode select option{background:#fff;color:#14141a;}
 /* ─ Quick Entry Fab ─ */
 #quick-fab{
   position:fixed !important;bottom:100px !important;right:22px !important;
-  background:linear-gradient(135deg,#2ecf7c,#1fb368) !important;
-  border:none !important;color:#fff !important;border-radius:50% !important;
-  width:56px !important;height:56px !important;
-  font-size:24px !important;display:flex !important;
+  background:linear-gradient(180deg,#2ecf7c,#1fb368) !important;
+  border:none !important;color:#fff !important;border-radius:16px !important;
+  width:44px !important;height:72px !important;
+  margin:0 6px !important;
+  font-size:22px !important;display:flex !important;
   align-items:center !important;justify-content:center !important;
   box-shadow:0 4px 24px rgba(46,207,124,.6),0 2px 8px rgba(0,0,0,.5) !important;
   z-index:99999 !important;cursor:pointer !important;
@@ -4949,11 +4950,11 @@ function buildMonthCalendar(offset){
     const pos = w.pnl >= 0;
     const intensity = Math.min(1, Math.abs(w.pnl) / 1200);
     const bg   = isLM
-      ? (pos ? `rgba(15,107,46,${0.09+intensity*0.08})` : `rgba(176,16,32,${0.08+intensity*0.08})`)
-      : (pos ? `rgba(30,80,50,${0.45+intensity*0.35})` : `rgba(80,20,28,${0.45+intensity*0.35})`);
+      ? (pos ? `rgba(15,107,46,0.18)` : `rgba(176,16,32,0.13)`)
+      : (pos ? `rgba(22,60,38,0.95)` : `rgba(65,16,24,0.95)`);
     const bdr  = isLM
-      ? (pos ? `rgba(15,107,46,${0.4+intensity*0.4})` : `rgba(176,16,32,${0.4+intensity*0.4})`)
-      : (pos ? `rgba(46,207,124,${0.3+intensity*0.4})` : `rgba(240,68,94,${0.3+intensity*0.4})`);
+      ? (pos ? `rgba(15,107,46,0.55)` : `rgba(176,16,32,0.55)`)
+      : (pos ? `rgba(46,207,124,0.45)` : `rgba(240,68,94,0.45)`);
     const col  = isLM ? (pos ? '#0a5523' : '#8b0b18') : (pos ? 'var(--green)' : 'var(--red)');
     const pfxW = pos ? '+' : '';
     const wr   = Math.round(w.wins / w.count * 100);
@@ -4996,26 +4997,25 @@ function buildMonthCalendar(offset){
     let bg, border, textCol, numCol;
 
     if(data && data.count>0){
-      const intensity = Math.min(1, Math.abs(data.pnl)/600);
       const isLightMode = document.body.classList.contains('light-mode');
       if(data.pnl>0){
         bg = isLightMode
-          ? `rgba(15,107,46,${0.10+intensity*0.10})`
-          : `rgba(30,80,50,${0.55+intensity*0.3})`;
+          ? `rgba(15,107,46,0.18)`
+          : `rgba(22,60,38,0.95)`;
         border = isLightMode
-          ? `1px solid rgba(15,107,46,${0.45+intensity*0.35})`
-          : `1px solid rgba(46,207,124,${0.25+intensity*0.35})`;
-        textCol = isLightMode ? '#0a5523' : 'var(--green)';
-        numCol = isLightMode ? '#1a3525' : 'rgba(255,255,255,.7)';
+          ? `1px solid rgba(15,107,46,0.55)`
+          : `1px solid rgba(46,207,124,0.45)`;
+        textCol = isLightMode ? '#0a5523' : '#2ecf7c';
+        numCol = isLightMode ? '#1a3525' : 'rgba(255,255,255,.85)';
       } else if(data.pnl<0){
         bg = isLightMode
-          ? `rgba(176,16,32,${0.08+intensity*0.09})`
-          : `rgba(80,20,28,${0.55+intensity*0.3})`;
+          ? `rgba(176,16,32,0.13)`
+          : `rgba(65,16,24,0.95)`;
         border = isLightMode
-          ? `1px solid rgba(176,16,32,${0.45+intensity*0.35})`
-          : `1px solid rgba(240,68,94,${0.25+intensity*0.35})`;
-        textCol = isLightMode ? '#8b0b18' : 'var(--red)';
-        numCol = isLightMode ? '#4a0b12' : 'rgba(255,255,255,.7)';
+          ? `1px solid rgba(176,16,32,0.55)`
+          : `1px solid rgba(240,68,94,0.45)`;
+        textCol = isLightMode ? '#8b0b18' : '#f0445e';
+        numCol = isLightMode ? '#4a0b12' : 'rgba(255,255,255,.85)';
       } else {
         bg = isLightMode ? 'rgba(0,0,0,.04)' : 'rgba(255,255,255,.06)';
         border = isLightMode ? '1px solid rgba(0,0,0,.10)' : '1px solid rgba(255,255,255,.12)';
@@ -5026,8 +5026,8 @@ function buildMonthCalendar(offset){
       const isLightMode = document.body.classList.contains('light-mode');
       bg = isLightMode
         ? (isWeekend ? 'rgba(0,0,0,.03)' : 'rgba(0,0,0,.025)')
-        : (isWeekend ? 'rgba(255,255,255,.02)' : 'rgba(255,255,255,.035)');
-      border = isLightMode ? '1px solid rgba(0,0,0,.08)' : '1px solid rgba(255,255,255,.06)';
+        : (isWeekend ? 'rgba(255,255,255,.02)' : 'rgba(255,255,255,.03)');
+      border = isLightMode ? '1px solid rgba(0,0,0,.08)' : '1px solid rgba(255,255,255,.07)';
       textCol = 'transparent';
       numCol = isLightMode
         ? (isWeekend ? 'rgba(0,0,0,.30)' : 'rgba(0,0,0,.45)')
@@ -5044,19 +5044,11 @@ function buildMonthCalendar(offset){
       ? (isLightModeWR ? 'rgba(10,85,35,.9)' : 'rgba(46,207,124,.9)')
       : (isLightModeWR ? 'rgba(139,11,24,.9)' : 'rgba(240,68,94,.9)');
 
-    html += `<div style="${todayStyle}background:${bg};border:${border};border-radius:10px;min-height:70px;padding:8px 7px 7px;display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;cursor:${data?'pointer':'default'};"${data ? ` onclick="showCalendarDayDrill(${JSON.stringify(data.ids)}, '${monthNames[month]} ${String(day).padStart(2,'0')}, ${year}')"` : ''}>
-      <span style="font-size:14px;color:${isToday?'var(--gold)':numCol};font-weight:${isToday?'700':'600'};">${String(day).padStart(2,'0')}</span>
+    html += `<div style="${todayStyle}background:${bg};border:${border};border-radius:10px;min-height:70px;padding:7px 7px 6px;display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;cursor:${data?'pointer':'default'};"${data ? ` onclick="showCalendarDayDrill(${JSON.stringify(data.ids)}, '${monthNames[month]} ${String(day).padStart(2,'0')}, ${year}')"` : ''}>
+      <span style="font-size:13px;color:${isToday?'var(--gold)':numCol};font-weight:${isToday?'700':'500'};line-height:1;">${day}</span>
       ${data && data.count>0 ? `
-        <div style="width:100%;">
-          <div style="font-size:13px;font-weight:700;color:${textCol};line-height:1.15;letter-spacing:.2px;">${pnlStr}</div>
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:3px;">
-            <span style="font-size:10px;color:${textCol};opacity:.85;">${countStr}</span>
-            <span style="font-size:10px;font-weight:700;color:${wrCol};">${wr}%</span>
-          </div>
-          ${data.count>1?`<div style="display:flex;gap:3px;margin-top:2px;">
-            ${data.wins>0?`<span style="font-size:8px;color:rgba(46,207,124,.85);letter-spacing:.3px;">${data.wins}W</span>`:''}
-            ${data.losses>0?`<span style="font-size:8px;color:rgba(240,68,94,.85);letter-spacing:.3px;">${data.losses}L</span>`:''}
-          </div>`:''}
+        <div style="width:100%;text-align:center;padding-bottom:2px;">
+          <div style="font-size:12px;font-weight:700;color:${textCol};line-height:1.1;letter-spacing:.1px;white-space:nowrap;">${pnlStr}</div>
         </div>` : ''}
     </div>`;
 
@@ -12239,7 +12231,7 @@ function setSyncDot(state){}
 </script>
 
 <!-- ── QUICK ENTRY FAB — direct body child so fixed position works ── -->
-<button id="quick-fab" title="Quick Trade Entry (under 10s)" onclick="openQuickEntry()" style="position:fixed!important;bottom:100px!important;right:22px!important;width:56px!important;height:56px!important;border-radius:50%!important;background:linear-gradient(135deg,#2ecf7c,#1fb368)!important;border:none!important;color:#fff!important;font-size:24px!important;display:flex!important;align-items:center!important;justify-content:center!important;z-index:99999!important;cursor:pointer!important;box-shadow:0 4px 24px rgba(46,207,124,.6)!important;visibility:visible!important;opacity:1!important;">⚡</button>
+<button id="quick-fab" title="Quick Trade Entry (under 10s)" onclick="openQuickEntry()" style="position:fixed!important;bottom:100px!important;right:22px!important;width:44px!important;height:72px!important;border-radius:16px!important;background:linear-gradient(180deg,#2ecf7c,#1fb368)!important;border:none!important;color:#fff!important;font-size:22px!important;display:flex!important;align-items:center!important;justify-content:center!important;z-index:99999!important;cursor:pointer!important;box-shadow:0 4px 24px rgba(46,207,124,.6)!important;visibility:visible!important;opacity:1!important;margin:0 6px!important;">⚡</button>
 
 <!-- ── APP FOOTER ── -->
 <div id="app-footer" style="text-align:center;padding:18px 20px 36px;border-top:1px solid rgba(255,255,255,.045);margin-top:8px;">
